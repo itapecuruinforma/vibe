@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Mensagens — Vibe</title>
+  <link rel="stylesheet" href="css/global.css"/>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo" style="font-size:18px">Mensagens</div>
+  <button class="btn btn-outline" id="btnNewChat" style="padding:6px 14px;font-size:13px">+ Nova</button>
+</div>
+
+<!-- NEW CHAT MODAL -->
+<div id="newChatModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-family:'Syne',sans-serif">Nova conversa</h3>
+      <button class="btn-ghost" id="closeNewChat" style="font-size:22px;padding:4px 8px">×</button>
+    </div>
+    <input class="input" id="searchUser" placeholder="Buscar usuário..." style="margin-bottom:12px"/>
+    <div id="userList"></div>
+  </div>
+</div>
+
+<div class="page" id="app" style="display:none">
+  <div id="chatList">
+    <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="feed.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Feed
+  </a>
+  <a href="buscar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    Buscar
+  </a>
+  <a href="mensagens.html" class="active">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Chat
+  </a>
+  <a href="notificacoes.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    Notif
+  </a>
+  <a href="perfil.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
+  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
+  projectId: "controle-de-gasto-fc4e0",
+  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
+  messagingSenderId: "1035761573543",
+  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
+  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null;
+let allUsers = {};
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user || !user.emailVerified) return window.location.href = 'index.html';
+  currentUser = user;
+  const snap = await get(ref(db, 'usuarios'));
+  snap.forEach(c => { allUsers[c.key] = { uid: c.key, ...c.val() }; });
+  document.getElementById('app').style.display = '';
+  loadChats();
+  loadUserList();
+});
+
+function loadChats() {
+  const list = document.getElementById('chatList');
+  onValue(ref(db, 'conversas'), async snap => {
+    list.innerHTML = '';
+    const convs = [];
+    snap.forEach(c => {
+      const v = c.val();
+      // Only show private convs that include me, or groups I'm in
+      if (
+        (v.tipo === 'privado' && (c.key.includes(currentUser.uid))) ||
+        (v.tipo === 'grupo' && v.participantes && v.participantes[currentUser.uid]) ||
+        (!v.tipo && c.key.includes(currentUser.uid))
+      ) {
+        convs.push({ id: c.key, ...v });
+      }
+    });
+
+    if (convs.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>Nenhuma conversa ainda</p></div>';
+      return;
+    }
+
+    for (const conv of convs) {
+      let name = conv.nomeGrupo || 'Conversa';
+      let emoji = '👥';
+      let foto = null;
+
+      if (!conv.nomeGrupo) {
+        // Private chat - get other user
+        const otherUid = conv.id.split('_').find(u => u !== currentUser.uid);
+        if (otherUid && allUsers[otherUid]) {
+          const u = allUsers[otherUid];
+          name = u.username;
+          emoji = u.emoji;
+          foto = u.fotoPerfil;
+        }
+      }
+
+      // Last message
+      let lastMsg = '';
+      let lastTs = conv.timestamp || 0;
+      if (conv.mensagens) {
+        const msgs = Object.values(conv.mensagens).sort((a, b) => b.timestamp - a.timestamp);
+        if (msgs[0]) {
+          lastMsg = msgs[0].texto || (msgs[0].audioUrl ? '🎤 Áudio' : msgs[0].imagemPequena ? '🖼️ Imagem' : '');
+          lastTs = msgs[0].timestamp;
+        }
+      }
+
+      const item = document.createElement('div');
+      item.className = 'chat-item';
+      item.innerHTML = `
+        ${foto
+          ? `<img class="avatar" src="${foto}" style="width:48px;height:48px"/>`
+          : `<div class="avatar-placeholder" style="width:48px;height:48px;font-size:20px;border:none">${emoji}</div>`}
+        <div class="chat-item-info">
+          <div class="chat-item-name">${name}</div>
+          <div class="chat-item-preview">${lastMsg || 'Sem mensagens'}</div>
+        </div>
+        <div class="chat-item-time">${timeAgo(lastTs)}</div>`;
+
+      item.onclick = () => {
+        const otherUid = conv.id.split('_').find(u => u !== currentUser.uid);
+        if (conv.nomeGrupo) {
+          window.location.href = `chat.html?conversaId=${conv.id}&tipo=grupo`;
+        } else {
+          window.location.href = `chat.html?tipo=privado&outroUid=${otherUid}`;
+        }
+      };
+      list.appendChild(item);
+    }
+  });
+}
+
+function loadUserList() {
+  const ul = document.getElementById('userList');
+  const entries = Object.entries(allUsers).filter(([uid]) => uid !== currentUser.uid);
+  entries.forEach(([uid, u]) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer';
+    div.innerHTML = `
+      ${u.fotoPerfil
+        ? `<img class="avatar" src="${u.fotoPerfil}" style="width:40px;height:40px"/>`
+        : `<div class="avatar-placeholder" style="width:40px;height:40px;font-size:18px;border:none">${u.emoji || '👤'}</div>`}
+      <div style="font-weight:600">${u.emoji} ${u.username}</div>`;
+    div.onclick = () => window.location.href = `chat.html?tipo=privado&outroUid=${uid}`;
+    ul.appendChild(div);
+  });
+}
+
+let searchTimeout2;
+document.getElementById('searchUser').oninput = (e) => {
+  clearTimeout(searchTimeout2);
+  const q = e.target.value.toLowerCase();
+  searchTimeout2 = setTimeout(() => {
+    document.getElementById('userList').querySelectorAll('div').forEach(el => {
+      const text = el.textContent.toLowerCase();
+      el.style.display = text.includes(q) ? '' : 'none';
+    });
+  }, 200);
+};
+
+document.getElementById('btnNewChat').onclick = () => document.getElementById('newChatModal').classList.remove('hidden');
+document.getElementById('closeNewChat').onclick = () => document.getElementById('newChatModal').classList.add('hidden');
+</script>
+</body>
+</html>

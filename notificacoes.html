@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Notificações — Vibe</title>
+  <link rel="stylesheet" href="css/global.css"/>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="btn-ghost" onclick="history.back()" style="font-size:20px;padding:4px 8px">←</button>
+  <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px">Notificações</span>
+  <button class="btn-ghost" id="btnMarkAll" style="font-size:12px;color:var(--accent)">Marcar lidas</button>
+</div>
+
+<div class="page" id="app" style="display:none">
+  <div id="notifList"></div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="feed.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Feed
+  </a>
+  <a href="buscar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    Buscar
+  </a>
+  <a href="mensagens.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Chat
+  </a>
+  <a href="notificacoes.html" class="active">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    Notif
+  </a>
+  <a href="perfil.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getDatabase, ref, get, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
+  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
+  projectId: "controle-de-gasto-fc4e0",
+  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
+  messagingSenderId: "1035761573543",
+  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
+  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null;
+const userCache = {};
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+async function getUser(uid) {
+  if (userCache[uid]) return userCache[uid];
+  const snap = await get(ref(db, 'usuarios/' + uid));
+  userCache[uid] = snap.val() || { username: 'usuário', emoji: '👤' };
+  return userCache[uid];
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user || !user.emailVerified) return window.location.href = 'index.html';
+  currentUser = user;
+  document.getElementById('app').style.display = '';
+  loadNotifications();
+});
+
+function loadNotifications() {
+  const list = document.getElementById('notifList');
+  onValue(ref(db, `notificacoes/${currentUser.uid}`), async snap => {
+    list.innerHTML = '';
+    if (!snap.exists()) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><p>Sem notificações</p></div>';
+      return;
+    }
+    const notifs = [];
+    snap.forEach(c => notifs.push({ id: c.key, ...c.val() }));
+    notifs.sort((a, b) => b.timestamp - a.timestamp);
+
+    for (const n of notifs) {
+      const u = await getUser(n.de);
+      const div = document.createElement('div');
+      div.className = 'notif-item' + (n.lida ? '' : ' unread');
+
+      let text = '';
+      let icon = '';
+      let action = () => {};
+
+      if (n.tipo === 'curtida') {
+        icon = '❤️';
+        text = `<strong>${u.username}</strong> curtiu seu post`;
+        action = () => window.location.href = 'feed.html';
+      } else if (n.tipo === 'comentario') {
+        icon = '💬';
+        text = `<strong>${u.username}</strong> comentou no seu post`;
+        action = () => window.location.href = 'feed.html';
+      } else if (n.tipo === 'seguiu') {
+        icon = '👤';
+        text = `<strong>${u.username}</strong> começou a te seguir`;
+        action = () => window.location.href = `perfil.html?uid=${n.de}`;
+      }
+
+      div.innerHTML = `
+        <div style="font-size:24px;flex-shrink:0">${icon}</div>
+        <div style="width:36px;height:36px;flex-shrink:0">
+          ${u.fotoPerfil
+            ? `<img class="avatar" src="${u.fotoPerfil}" style="width:36px;height:36px"/>`
+            : `<div class="avatar-placeholder" style="width:36px;height:36px;font-size:15px;border:none">${u.emoji}</div>`}
+        </div>
+        <div class="notif-text">${text}<div class="notif-time">${timeAgo(n.timestamp)}</div></div>
+        ${!n.lida ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>' : ''}
+      `;
+
+      div.onclick = async () => {
+        await update(ref(db, `notificacoes/${currentUser.uid}/${n.id}`), { lida: true });
+        action();
+      };
+
+      list.appendChild(div);
+    }
+  });
+}
+
+document.getElementById('btnMarkAll').onclick = async () => {
+  const snap = await get(ref(db, `notificacoes/${currentUser.uid}`));
+  const updates = {};
+  snap.forEach(c => { updates[c.key + '/lida'] = true; });
+  await update(ref(db, `notificacoes/${currentUser.uid}`), updates);
+};
+</script>
+</body>
+</html>

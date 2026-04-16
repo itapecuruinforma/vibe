@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Feed — Vibe</title>
+  <link rel="stylesheet" href="css/global.css"/>
+</head>
+<body>
+
+<!-- STORY VIEWER -->
+<div id="storyViewer" class="story-viewer hidden">
+  <div id="storyProgressBars" style="display:flex;gap:4px;padding:50px 12px 8px;position:absolute;top:0;left:0;right:0;z-index:1"></div>
+  <div class="story-header">
+    <div class="avatar-placeholder" id="storyAvatar" style="width:36px;height:36px;font-size:16px"></div>
+    <div>
+      <div id="storyUsername" style="color:#fff;font-weight:600;font-size:14px"></div>
+      <div id="storyTime" style="color:rgba(255,255,255,0.6);font-size:11px"></div>
+    </div>
+    <button class="story-close" id="storyClose">×</button>
+  </div>
+  <img id="storyImg" class="story-viewer-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain"/>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(transparent,rgba(0,0,0,0.4));pointer-events:none"></div>
+  <div style="position:absolute;inset:0;display:flex">
+    <div id="storyPrev" style="flex:1;cursor:pointer"></div>
+    <div id="storyNext" style="flex:1;cursor:pointer"></div>
+  </div>
+</div>
+
+<!-- COMMENT MODAL -->
+<div id="commentModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-family:'Syne',sans-serif">Comentários</h3>
+      <button class="btn-ghost" id="closeComments" style="font-size:22px;padding:4px 8px">×</button>
+    </div>
+    <div id="commentsList" style="max-height:300px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px">
+      <input class="input" id="commentInput" placeholder="Adicionar comentário..." style="flex:1"/>
+      <button class="btn btn-primary" id="sendComment" style="padding:10px 16px">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE MODAL -->
+<div id="imgModal" class="modal-backdrop hidden" style="align-items:center">
+  <img id="imgModalSrc" style="max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain"/>
+  <button id="closeImgModal" style="position:fixed;top:16px;right:16px;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:28px;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+</div>
+
+<div class="topbar">
+  <div class="topbar-logo">Vibe</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-ghost" id="btnNotif" style="font-size:22px;position:relative">
+      🔔
+      <span class="badge hidden" id="notifBadge" style="position:absolute;top:4px;right:4px;width:14px;height:14px;font-size:9px"></span>
+    </button>
+  </div>
+</div>
+
+<div class="page" id="app" style="display:none">
+  <!-- STORIES -->
+  <div class="stories-row" id="storiesRow"></div>
+
+  <!-- NEW POST BTN -->
+  <button class="btn btn-outline" id="btnNewPost" style="width:100%;margin-bottom:16px;gap:8px">
+    <span>📷</span> Criar post
+  </button>
+
+  <!-- FEED -->
+  <div id="feedContainer">
+    <div class="empty-state">
+      <div class="spinner" style="margin:0 auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW POST MODAL -->
+<div id="newPostModal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-family:'Syne',sans-serif">Novo post</h3>
+      <button class="btn-ghost" id="closeNewPost" style="font-size:22px;padding:4px 8px">×</button>
+    </div>
+    <div id="postPreviewWrap" class="hidden" style="margin-bottom:12px">
+      <img id="postPreview" style="width:100%;border-radius:12px;object-fit:cover;max-height:300px"/>
+    </div>
+    <button class="btn btn-outline" id="btnSelectImg" style="width:100%;margin-bottom:12px">📷 Selecionar imagem</button>
+    <input type="file" id="imgInput" accept="image/*" style="display:none"/>
+    <textarea class="input" id="postCaption" rows="3" placeholder="Escreva uma legenda..." style="margin-bottom:12px"></textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" id="btnPostStory" style="flex:1">Story (24h)</button>
+      <button class="btn btn-primary" id="btnPublish" style="flex:1">Publicar</button>
+    </div>
+    <div id="uploadProgress" class="hidden" style="margin-top:12px">
+      <div style="background:var(--bg3);border-radius:50px;height:6px;overflow:hidden">
+        <div id="progressBar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width 0.3s;border-radius:50px"></div>
+      </div>
+      <div id="progressText" style="font-size:12px;color:var(--text2);margin-top:6px;text-align:center">Enviando...</div>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="feed.html" class="active">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Feed
+  </a>
+  <a href="buscar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    Buscar
+  </a>
+  <a href="mensagens.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Chat
+  </a>
+  <a href="notificacoes.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    Notif
+  </a>
+  <a href="perfil.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import {
+  getDatabase, ref, onValue, push, set, get, update, remove, query, orderByChild, limitToLast
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { uploadFile, uniquePath } from "./js/storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
+  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
+  projectId: "controle-de-gasto-fc4e0",
+  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
+  messagingSenderId: "1035761573543",
+  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
+  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null;
+let myProfile = null;
+let currentPostId = null;
+let selectedFile = null;
+const userCache = {};
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+async function getUser(uid) {
+  if (userCache[uid]) return userCache[uid];
+  const snap = await get(ref(db, 'usuarios/' + uid));
+  userCache[uid] = snap.val() || { username: 'usuário', emoji: '👤' };
+  return userCache[uid];
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user || !user.emailVerified) return window.location.href = 'index.html';
+  currentUser = user;
+  const snap = await get(ref(db, 'usuarios/' + user.uid));
+  myProfile = snap.val() || {};
+  document.getElementById('app').style.display = '';
+  loadStories();
+  loadFeed();
+  loadNotifBadge();
+});
+
+// ── STORIES ──
+function loadStories() {
+  const row = document.getElementById('storiesRow');
+  // Add story button
+  const addBtn = document.createElement('div');
+  addBtn.className = 'story-thumb';
+  addBtn.innerHTML = `
+    <div class="story-ring" style="background:var(--border)">
+      <div class="story-ring-inner">
+        <div class="avatar-placeholder" style="width:52px;height:52px;font-size:22px;border:none">+</div>
+      </div>
+    </div>
+    <span>Seu story</span>`;
+  addBtn.onclick = () => {
+    document.getElementById('btnPostStory').scrollIntoView();
+    document.getElementById('newPostModal').classList.remove('hidden');
+  };
+  row.appendChild(addBtn);
+
+  const cutoff = Date.now() - 86400000;
+  onValue(ref(db, 'stories'), async snap => {
+    // Remove old story thumbs except first
+    while (row.children.length > 1) row.removeChild(row.lastChild);
+
+    const storiesByUser = {};
+    snap.forEach(child => {
+      const s = child.val();
+      if (s.timestamp < cutoff) return;
+      if (!storiesByUser[s.uid]) storiesByUser[s.uid] = [];
+      storiesByUser[s.uid].push({ id: child.key, ...s });
+    });
+
+    for (const uid in storiesByUser) {
+      const u = await getUser(uid);
+      const thumb = document.createElement('div');
+      thumb.className = 'story-thumb';
+      const seen = storiesByUser[uid].every(s => s.visto && s.visto[currentUser.uid]);
+      thumb.innerHTML = `
+        <div class="story-ring ${seen ? 'seen' : ''}">
+          <div class="story-ring-inner">
+            ${u.fotoPerfil
+              ? `<img class="avatar" src="${u.fotoPerfil}" style="width:52px;height:52px"/>`
+              : `<div class="avatar-placeholder" style="width:52px;height:52px;font-size:22px;border:none">${u.emoji}</div>`}
+          </div>
+        </div>
+        <span>${u.username}</span>`;
+      thumb.onclick = () => openStoryViewer(storiesByUser[uid], u);
+      row.appendChild(thumb);
+    }
+  });
+}
+
+let storyTimeout;
+let currentStories = [];
+let storyIndex = 0;
+
+function openStoryViewer(stories, user) {
+  currentStories = stories;
+  storyIndex = 0;
+  document.getElementById('storyViewer').classList.remove('hidden');
+  document.getElementById('storyUsername').textContent = user.emoji + ' ' + user.username;
+  showStory(0);
+}
+
+function showStory(idx) {
+  clearTimeout(storyTimeout);
+  if (idx >= currentStories.length) {
+    document.getElementById('storyViewer').classList.add('hidden');
+    return;
+  }
+  const s = currentStories[idx];
+  document.getElementById('storyImg').src = s.imagemUrl;
+  document.getElementById('storyTime').textContent = timeAgo(s.timestamp);
+
+  // Mark as seen
+  set(ref(db, `stories/${s.id}/visto/${currentUser.uid}`), true);
+
+  // Progress bars
+  const bars = document.getElementById('storyProgressBars');
+  bars.innerHTML = '';
+  currentStories.forEach((_, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'story-progress-bar';
+    bar.style.flex = '1';
+    if (i < idx) bar.innerHTML = '<div style="height:100%;background:#fff;border-radius:2px"></div>';
+    else if (i === idx) bar.innerHTML = '<div class="story-progress-fill"></div>';
+    bars.appendChild(bar);
+  });
+
+  storyTimeout = setTimeout(() => showStory(idx + 1), 5000);
+}
+
+document.getElementById('storyClose').onclick = () => {
+  clearTimeout(storyTimeout);
+  document.getElementById('storyViewer').classList.add('hidden');
+};
+document.getElementById('storyPrev').onclick = () => { storyIndex = Math.max(0, storyIndex - 1); showStory(storyIndex); };
+document.getElementById('storyNext').onclick = () => { storyIndex++; showStory(storyIndex); };
+
+// ── FEED ──
+function loadFeed() {
+  const container = document.getElementById('feedContainer');
+  const postsRef = query(ref(db, 'posts'), orderByChild('timestamp'), limitToLast(30));
+  onValue(postsRef, async snap => {
+    container.innerHTML = '';
+    const posts = [];
+    snap.forEach(child => posts.unshift({ id: child.key, ...child.val() }));
+
+    if (posts.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhum post ainda. Seja o primeiro!</p></div>';
+      return;
+    }
+
+    for (const post of posts) {
+      const card = await buildPostCard(post);
+      container.appendChild(card);
+    }
+  });
+}
+
+async function buildPostCard(post) {
+  const u = await getUser(post.uid);
+  const likeCount = post.curtidas ? Object.keys(post.curtidas).length : 0;
+  const commentCount = post.comentarios ? Object.keys(post.comentarios).length : 0;
+  const liked = post.curtidas && post.curtidas[currentUser.uid];
+
+  const card = document.createElement('div');
+  card.className = 'post-card';
+  card.dataset.postId = post.id;
+
+  card.innerHTML = `
+    <div class="post-header">
+      ${u.fotoPerfil
+        ? `<img class="avatar" src="${u.fotoPerfil}" style="width:38px;height:38px" onclick="goProfile('${post.uid}')" style="cursor:pointer"/>`
+        : `<div class="avatar-placeholder" style="width:38px;height:38px;font-size:16px;cursor:pointer" onclick="goProfile('${post.uid}')">${u.emoji}</div>`}
+      <div class="post-header-info">
+        <div class="post-username" onclick="goProfile('${post.uid}')">${u.emoji} ${u.username}</div>
+        <div class="post-time">${timeAgo(post.timestamp)}</div>
+      </div>
+      ${post.uid === currentUser.uid ? `<button class="btn-ghost" onclick="deletePost('${post.id}')" style="font-size:18px;padding:4px 8px;color:var(--text3)">🗑️</button>` : ''}
+    </div>
+    ${post.imagemUrl ? `<img class="post-img" src="${post.imagemUrl}" loading="lazy"/>` : ''}
+    <div class="post-actions">
+      <button class="action-btn ${liked ? 'liked' : ''}" id="like-${post.id}">
+        ${liked ? '❤️' : '🤍'} <span class="count">${likeCount}</span>
+      </button>
+      <button class="action-btn" onclick="openComments('${post.id}')">
+        💬 <span class="count">${commentCount}</span>
+      </button>
+    </div>
+    ${post.legenda ? `
+      <div class="post-caption">
+        <strong onclick="goProfile('${post.uid}')">${u.username}</strong> ${post.legenda}
+      </div>` : ''}
+    ${commentCount > 0 ? `<div class="post-comments-preview" onclick="openComments('${post.id}')">Ver todos os ${commentCount} comentários</div>` : ''}
+  `;
+
+  // Like button
+  card.querySelector(`#like-${post.id}`).onclick = () => toggleLike(post.id);
+
+  // Image click to expand
+  const img = card.querySelector('.post-img');
+  if (img) img.onclick = () => openImgModal(post.imagemUrl);
+
+  return card;
+}
+
+async function toggleLike(postId) {
+  const likeRef = ref(db, `posts/${postId}/curtidas/${currentUser.uid}`);
+  const snap = await get(likeRef);
+  if (snap.exists()) {
+    await remove(likeRef);
+  } else {
+    await set(likeRef, true);
+    // Notify post owner
+    const postSnap = await get(ref(db, 'posts/' + postId));
+    const post = postSnap.val();
+    if (post && post.uid !== currentUser.uid) {
+      push(ref(db, `notificacoes/${post.uid}`), {
+        tipo: 'curtida',
+        de: currentUser.uid,
+        postId,
+        timestamp: Date.now(),
+        lida: false
+      });
+    }
+  }
+}
+
+window.goProfile = (uid) => {
+  window.location.href = `perfil.html?uid=${uid}`;
+};
+
+window.deletePost = async (postId) => {
+  if (!confirm('Deletar este post?')) return;
+  await remove(ref(db, 'posts/' + postId));
+  toast('Post deletado', 'success');
+};
+
+window.openComments = (postId) => {
+  currentPostId = postId;
+  document.getElementById('commentModal').classList.remove('hidden');
+  loadComments(postId);
+};
+
+function openImgModal(url) {
+  document.getElementById('imgModalSrc').src = url;
+  document.getElementById('imgModal').classList.remove('hidden');
+}
+
+document.getElementById('closeImgModal').onclick = () => document.getElementById('imgModal').classList.add('hidden');
+document.getElementById('imgModal').onclick = (e) => { if (e.target === document.getElementById('imgModal')) document.getElementById('imgModal').classList.add('hidden'); };
+
+function loadComments(postId) {
+  const list = document.getElementById('commentsList');
+  list.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px">Carregando...</div>';
+  onValue(ref(db, `posts/${postId}/comentarios`), async snap => {
+    list.innerHTML = '';
+    if (!snap.exists()) {
+      list.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:16px">Sem comentários ainda</div>';
+      return;
+    }
+    const items = [];
+    snap.forEach(c => items.push({ id: c.key, ...c.val() }));
+    items.sort((a, b) => a.timestamp - b.timestamp);
+
+    for (const c of items) {
+      const u = await getUser(c.uid);
+      const div = document.createElement('div');
+      div.className = 'comment-item';
+      div.innerHTML = `
+        ${u.fotoPerfil
+          ? `<img class="avatar" src="${u.fotoPerfil}" style="width:32px;height:32px"/>`
+          : `<div class="avatar-placeholder" style="width:32px;height:32px;font-size:14px;border:none">${u.emoji}</div>`}
+        <div class="comment-body">
+          <span class="comment-name">${u.username}</span>
+          <div class="comment-text">${c.texto}</div>
+          <div class="comment-time">${timeAgo(c.timestamp)}</div>
+        </div>`;
+      list.appendChild(div);
+    }
+    list.scrollTop = list.scrollHeight;
+  });
+}
+
+document.getElementById('closeComments').onclick = () => document.getElementById('commentModal').classList.add('hidden');
+
+document.getElementById('sendComment').onclick = async () => {
+  const txt = document.getElementById('commentInput').value.trim();
+  if (!txt || !currentPostId) return;
+  await push(ref(db, `posts/${currentPostId}/comentarios`), {
+    uid: currentUser.uid,
+    texto: txt,
+    timestamp: Date.now()
+  });
+  // Notify
+  const postSnap = await get(ref(db, 'posts/' + currentPostId));
+  const post = postSnap.val();
+  if (post && post.uid !== currentUser.uid) {
+    push(ref(db, `notificacoes/${post.uid}`), {
+      tipo: 'comentario',
+      de: currentUser.uid,
+      postId: currentPostId,
+      timestamp: Date.now(),
+      lida: false
+    });
+  }
+  document.getElementById('commentInput').value = '';
+};
+
+// ── NEW POST ──
+document.getElementById('btnNewPost').onclick = () => document.getElementById('newPostModal').classList.remove('hidden');
+document.getElementById('closeNewPost').onclick = () => document.getElementById('newPostModal').classList.add('hidden');
+
+document.getElementById('btnSelectImg').onclick = () => document.getElementById('imgInput').click();
+
+document.getElementById('imgInput').onchange = (e) => {
+  selectedFile = e.target.files[0];
+  if (!selectedFile) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('postPreview').src = ev.target.result;
+    document.getElementById('postPreviewWrap').classList.remove('hidden');
+  };
+  reader.readAsDataURL(selectedFile);
+};
+
+async function publish(isStory = false) {
+  if (!selectedFile) return toast('Selecione uma imagem', 'error');
+  const caption = document.getElementById('postCaption').value.trim();
+
+  document.getElementById('uploadProgress').classList.remove('hidden');
+  document.getElementById('btnPublish').disabled = true;
+  document.getElementById('btnPostStory').disabled = true;
+
+  try {
+    const folder = isStory ? 'stories' : 'posts';
+    const path = uniquePath(`${folder}/${currentUser.uid}`, selectedFile.name);
+
+    const url = await uploadFile(selectedFile, path, (pct) => {
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressText').textContent = `Enviando... ${pct}%`;
+    });
+
+    if (isStory) {
+      await push(ref(db, 'stories'), {
+        uid: currentUser.uid, imagemUrl: url, timestamp: Date.now()
+      });
+      toast('Story publicado! ✨', 'success');
+    } else {
+      await push(ref(db, 'posts'), {
+        uid: currentUser.uid, imagemUrl: url, legenda: caption, timestamp: Date.now()
+      });
+      toast('Post publicado! 🎉', 'success');
+    }
+  } catch (e) {
+    toast('Erro no upload: ' + e.message, 'error');
+  }
+
+  selectedFile = null;
+  document.getElementById('postCaption').value = '';
+  document.getElementById('postPreviewWrap').classList.add('hidden');
+  document.getElementById('uploadProgress').classList.add('hidden');
+  document.getElementById('btnPublish').disabled = false;
+  document.getElementById('btnPostStory').disabled = false;
+  document.getElementById('newPostModal').classList.add('hidden');
+}
+
+document.getElementById('btnPublish').onclick = () => publish(false);
+document.getElementById('btnPostStory').onclick = () => publish(true);
+
+// ── NOTIFICATIONS BADGE ──
+function loadNotifBadge() {
+  onValue(ref(db, `notificacoes/${currentUser.uid}`), snap => {
+    let unread = 0;
+    snap.forEach(c => { if (!c.val().lida) unread++; });
+    const badge = document.getElementById('notifBadge');
+    if (unread > 0) {
+      badge.textContent = unread > 9 ? '9+' : unread;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  });
+}
+
+document.getElementById('btnNotif').onclick = () => window.location.href = 'notificacoes.html';
+</script>
+</body>
+</html>

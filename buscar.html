@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Buscar — Vibe</title>
+  <link rel="stylesheet" href="css/global.css"/>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">Buscar</div>
+</div>
+
+<div class="page" id="app" style="display:none">
+  <input class="input" id="searchInput" placeholder="🔍  Buscar usuários..." style="margin-bottom:16px"/>
+  <div id="results"></div>
+  <div id="suggestions">
+    <div class="section-title" style="margin-bottom:12px">Sugestões</div>
+    <div id="suggestionsList"></div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="feed.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    Feed
+  </a>
+  <a href="buscar.html" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    Buscar
+  </a>
+  <a href="mensagens.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Chat
+  </a>
+  <a href="notificacoes.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    Notif
+  </a>
+  <a href="perfil.html">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
+  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
+  projectId: "controle-de-gasto-fc4e0",
+  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
+  messagingSenderId: "1035761573543",
+  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
+  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null;
+let allUsers = {};
+
+onAuthStateChanged(auth, async user => {
+  if (!user || !user.emailVerified) return window.location.href = 'index.html';
+  currentUser = user;
+  document.getElementById('app').style.display = '';
+  const snap = await get(ref(db, 'usuarios'));
+  snap.forEach(c => { if (c.key !== user.uid) allUsers[c.key] = { uid: c.key, ...c.val() }; });
+  loadSuggestions();
+});
+
+function userCard(uid, u) {
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer';
+  div.innerHTML = `
+    ${u.fotoPerfil
+      ? `<img class="avatar" src="${u.fotoPerfil}" style="width:44px;height:44px"/>`
+      : `<div class="avatar-placeholder" style="width:44px;height:44px;font-size:20px;border:none">${u.emoji || '👤'}</div>`}
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:15px">${u.emoji || ''} ${u.username}</div>
+      ${u.bio ? `<div style="font-size:13px;color:var(--text2)">${u.bio.substring(0, 50)}</div>` : ''}
+    </div>`;
+  div.onclick = () => window.location.href = `perfil.html?uid=${uid}`;
+  return div;
+}
+
+function loadSuggestions() {
+  const list = document.getElementById('suggestionsList');
+  const entries = Object.entries(allUsers).slice(0, 10);
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty-state"><p>Nenhum usuário ainda</p></div>';
+    return;
+  }
+  entries.forEach(([uid, u]) => list.appendChild(userCard(uid, u)));
+}
+
+let searchTimeout;
+document.getElementById('searchInput').oninput = (e) => {
+  clearTimeout(searchTimeout);
+  const query = e.target.value.trim().toLowerCase();
+  if (!query) {
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('suggestions').style.display = '';
+    return;
+  }
+  document.getElementById('suggestions').style.display = 'none';
+  searchTimeout = setTimeout(() => {
+    const results = document.getElementById('results');
+    results.innerHTML = '';
+    const matches = Object.entries(allUsers).filter(([uid, u]) =>
+      u.username && u.username.toLowerCase().includes(query)
+    );
+    if (matches.length === 0) {
+      results.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>Nenhum usuário encontrado</p></div>';
+      return;
+    }
+    matches.forEach(([uid, u]) => results.appendChild(userCard(uid, u)));
+  }, 300);
+};
+</script>
+</body>
+</html>

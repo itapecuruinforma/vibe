@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Entrar — Vibe</title>
+  <link rel="stylesheet" href="css/global.css"/>
+</head>
+<body>
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+</div>
+
+<div class="page-no-nav" id="app" style="display:none">
+  <div class="auth-logo">Vibe</div>
+  <div class="auth-tagline">Conecte-se com quem importa</div>
+
+  <!-- LOGIN -->
+  <div id="loginForm" class="auth-form">
+    <input class="input" id="emailLogin" type="email" placeholder="Email"/>
+    <input class="input" id="senhaLogin" type="password" placeholder="Senha"/>
+    <button class="btn btn-primary" id="btnLogin" style="width:100%;padding:14px">Entrar</button>
+    <div class="auth-switch">Não tem conta? <span id="toRegister">Cadastre-se</span></div>
+  </div>
+
+  <!-- CADASTRO -->
+  <div id="registerForm" class="auth-form hidden">
+    <input class="input" id="usernameReg" type="text" placeholder="Nome de usuário (único)" maxlength="30"/>
+    <input class="input" id="emojiReg" type="text" placeholder="Emoji favorito (ex: 🔥)" maxlength="4"/>
+    <input class="input" id="emailReg" type="email" placeholder="Email"/>
+    <input class="input" id="senhaReg" type="password" placeholder="Senha (min. 6 caracteres)"/>
+    <button class="btn btn-primary" id="btnRegister" style="width:100%;padding:14px">Criar conta</button>
+    <div class="auth-switch">Já tem conta? <span id="toLogin">Entrar</span></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendEmailVerification, signOut, onAuthStateChanged, fetchSignInMethodsForEmail
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import {
+  getDatabase, ref, set, get, onValue
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
+  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
+  projectId: "controle-de-gasto-fc4e0",
+  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
+  messagingSenderId: "1035761573543",
+  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
+  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+onAuthStateChanged(auth, user => {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  if (user && user.emailVerified) {
+    window.location.href = 'feed.html';
+  } else if (user && !user.emailVerified) {
+    signOut(auth);
+  }
+});
+
+document.getElementById('toRegister').onclick = () => {
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('registerForm').classList.remove('hidden');
+};
+
+document.getElementById('toLogin').onclick = () => {
+  document.getElementById('registerForm').classList.add('hidden');
+  document.getElementById('loginForm').classList.remove('hidden');
+};
+
+document.getElementById('btnLogin').onclick = async () => {
+  const email = document.getElementById('emailLogin').value.trim();
+  const senha = document.getElementById('senhaLogin').value;
+  if (!email || !senha) return toast('Preencha todos os campos', 'error');
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, senha);
+    if (!cred.user.emailVerified) {
+      toast('Verifique seu email antes de entrar', 'error');
+      await signOut(auth);
+      return;
+    }
+    window.location.href = 'feed.html';
+  } catch (e) {
+    toast('Email ou senha incorretos', 'error');
+  }
+};
+
+document.getElementById('btnRegister').onclick = async () => {
+  const username = document.getElementById('usernameReg').value.trim().toLowerCase();
+  const emoji = document.getElementById('emojiReg').value.trim() || '😊';
+  const email = document.getElementById('emailReg').value.trim();
+  const senha = document.getElementById('senhaReg').value;
+
+  if (!username || !email || !senha) return toast('Preencha todos os campos', 'error');
+  if (username.length < 3) return toast('Username muito curto', 'error');
+  if (senha.length < 6) return toast('Senha precisa ter 6+ caracteres', 'error');
+  if (!/^[a-z0-9_]+$/.test(username)) return toast('Username só pode ter letras, números e _', 'error');
+
+  // Checar username único
+  const snap = await get(ref(db, 'usernames/' + username));
+  if (snap.exists()) return toast('Username já em uso', 'error');
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, senha);
+    const uid = cred.user.uid;
+
+    await set(ref(db, 'usuarios/' + uid), {
+      username, emoji, bio: '', fotoPerfil: '',
+      criadoEm: Date.now()
+    });
+    await set(ref(db, 'usernames/' + username), uid);
+    await sendEmailVerification(cred.user);
+    await signOut(auth);
+
+    toast('Conta criada! Verifique seu email ✉️', 'success');
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+};
+</script>
+</body>
+</html>

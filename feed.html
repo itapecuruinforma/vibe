@@ -536,12 +536,12 @@ async function publish(isStory = false) {
     if (captionError) return toast(captionError, 'error');
   }
 
-  // Rate limiting
-  const action = isStory ? 'story' : 'post';
-  const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, action);
-  if (!rateLimitCheck.allowed) {
-    return toast(rateLimitCheck.message, 'error');
-  }
+  // Rate limiting (desabilitado temporariamente para teste)
+  // const action = isStory ? 'story' : 'post';
+  // const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, action);
+  // if (!rateLimitCheck.allowed) {
+  //   return toast(rateLimitCheck.message, 'error');
+  // }
 
   document.getElementById('uploadProgress').classList.remove('hidden');
   document.getElementById('btnPublish').disabled = true;

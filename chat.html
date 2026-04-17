@@ -240,13 +240,19 @@ onAuthStateChanged(auth, async user => {
 
 function loadMessages() {
   const container = document.getElementById('chatMessages');
+  console.log('[CHAT DEBUG] setup listener at conversas/' + conversaId + '/mensagens');
   onValue(ref(db, `conversas/${conversaId}/mensagens`), async snap => {
+    console.log('[CHAT DEBUG] listener fired. exists=', snap.exists(), 'size=', snap.size);
     container.innerHTML = '';
-    if (!snap.exists()) return;
+    if (!snap.exists()) {
+      console.log('[CHAT DEBUG] snap vazio — nenhuma mensagem nessa conversaId');
+      return;
+    }
 
     const msgs = [];
     snap.forEach(c => msgs.push({ id: c.key, ...c.val() }));
     msgs.sort((a, b) => a.timestamp - b.timestamp);
+    console.log('[CHAT DEBUG] ' + msgs.length + ' msgs carregadas. tipos:', msgs.map(m => m.texto ? 'texto' : m.imagemUrl ? 'imagem' : m.audioUrl ? 'audio' : 'outro'));
 
     for (const m of msgs) {
       try {

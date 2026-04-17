@@ -249,49 +249,53 @@ function loadMessages() {
     msgs.sort((a, b) => a.timestamp - b.timestamp);
 
     for (const m of msgs) {
-      const u = await getUser(m.uid);
-      const isMine = m.uid === currentUser.uid;
+      try {
+        const u = await getUser(m.uid);
+        const isMine = m.uid === currentUser.uid;
 
-      const wrap = document.createElement('div');
-      wrap.style.display = 'flex';
-      wrap.style.flexDirection = 'column';
-      wrap.style.alignSelf = isMine ? 'flex-end' : 'flex-start';
-      wrap.style.maxWidth = '75%';
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.flexDirection = 'column';
+        wrap.style.alignSelf = isMine ? 'flex-end' : 'flex-start';
+        wrap.style.maxWidth = '75%';
 
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${isMine ? 'bubble-mine' : 'bubble-other'}`;
+        const bubble = document.createElement('div');
+        bubble.className = `bubble ${isMine ? 'bubble-mine' : 'bubble-other'}`;
 
-      if (!isMine && tipo !== 'privado') {
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'bubble-name';
-        nameDiv.textContent = u.username;
-        bubble.appendChild(nameDiv);
+        if (!isMine && tipo !== 'privado') {
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'bubble-name';
+          nameDiv.textContent = u.username;
+          bubble.appendChild(nameDiv);
+        }
+
+        if (m.texto) {
+          bubble.appendChild(document.createTextNode(m.texto));
+        } else if (m.audioUrl) {
+          const audio = document.createElement('audio');
+          audio.controls = true;
+          audio.src = m.audioUrl;
+          bubble.appendChild(audio);
+        } else if (m.imagemUrl) {
+          const img = document.createElement('img');
+          img.src = m.imagemUrl;
+          img.onclick = () => {
+            document.getElementById('imgModalSrc').src = m.imagemUrl;
+            document.getElementById('imgModal').style.display = 'flex';
+          };
+          bubble.appendChild(img);
+        }
+
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'bubble-time';
+        timeDiv.textContent = timeStr(m.timestamp);
+        bubble.appendChild(timeDiv);
+
+        wrap.appendChild(bubble);
+        container.appendChild(wrap);
+      } catch (error) {
+        console.error('Erro ao renderizar mensagem:', m, error);
       }
-
-      if (m.texto) {
-        bubble.appendChild(document.createTextNode(m.texto));
-      } else if (m.audioUrl) {
-        const audio = document.createElement('audio');
-        audio.controls = true;
-        audio.src = m.audioUrl;
-        bubble.appendChild(audio);
-      } else if (m.imagemUrl) {
-        const img = document.createElement('img');
-        img.src = m.imagemUrl;
-        img.onclick = () => {
-          document.getElementById('imgModalSrc').src = m.imagemUrl;
-          document.getElementById('imgModal').style.display = 'flex';
-        };
-        bubble.appendChild(img);
-      }
-
-      const timeDiv = document.createElement('div');
-      timeDiv.className = 'bubble-time';
-      timeDiv.textContent = timeStr(m.timestamp);
-      bubble.appendChild(timeDiv);
-
-      wrap.appendChild(bubble);
-      container.appendChild(wrap);
     }
 
     container.scrollTop = container.scrollHeight;

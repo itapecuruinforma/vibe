@@ -12,14 +12,15 @@
       height: 100vh;
       max-width: 480px;
       margin: 0 auto;
+      position: relative;
     }
     .chat-header {
       position: sticky;
       top: 0;
-      background: rgba(10,10,15,0.9);
+      background: rgba(10,10,15,0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      padding: 10px 16px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -28,87 +29,257 @@
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 12px 10px 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(rgba(124, 92, 252, 0.05) 1px, transparent 1px),
+        radial-gradient(rgba(252, 92, 125, 0.04) 1px, transparent 1px);
+      background-size: 24px 24px, 24px 24px;
+      background-position: 0 0, 12px 12px;
     }
     .chat-input-bar {
-      padding: 10px 12px;
+      padding: 8px 10px;
       background: var(--bg2);
       border-top: 1px solid var(--border);
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
-      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
     }
+
+    /* Date separator (tipo WhatsApp) */
+    .date-sep {
+      align-self: center;
+      background: rgba(28, 28, 38, 0.85);
+      backdrop-filter: blur(8px);
+      color: var(--text2);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 50px;
+      margin: 12px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Wrap da mensagem com margem lateral extra quando agrupa com a mesma pessoa */
+    .msg-wrap { display: flex; flex-direction: column; max-width: 78%; margin-bottom: 2px; }
+    .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
+    .msg-wrap.other { align-self: flex-start; align-items: flex-start; }
+    .msg-wrap + .msg-wrap:not(.same-sender) { margin-top: 8px; }
+
+    /* Bubble WhatsApp-style com tail */
     .bubble {
-      max-width: 75%;
-      padding: 10px 14px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.5;
+      position: relative;
+      padding: 6px 10px 6px 10px;
+      border-radius: 8px;
+      font-size: 14.5px;
+      line-height: 1.4;
+      word-break: break-word;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+      min-width: 70px;
     }
     .bubble-mine {
-      background: linear-gradient(135deg, var(--accent), #9c7cff);
+      background: linear-gradient(135deg, #7c5cfc, #9c7cff);
       color: #fff;
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
+      border-top-right-radius: 8px;
+      border-bottom-right-radius: 2px;
     }
     .bubble-other {
       background: var(--bg3);
       color: var(--text);
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
+      border-top-left-radius: 8px;
+      border-bottom-left-radius: 2px;
     }
+
+    /* Rabinho (tail) só no primeiro balão da sequência */
+    .msg-wrap.tail .bubble-mine::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -6px;
+      width: 12px;
+      height: 13px;
+      background: linear-gradient(135deg, #7c5cfc, #9c7cff);
+      clip-path: polygon(0 0, 0 100%, 100% 100%);
+    }
+    .msg-wrap.tail .bubble-other::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -6px;
+      width: 12px;
+      height: 13px;
+      background: var(--bg3);
+      clip-path: polygon(100% 0, 0 100%, 100% 100%);
+    }
+
     .bubble-name {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
-      margin-bottom: 3px;
-      opacity: 0.7;
+      color: var(--accent2);
+      margin-bottom: 2px;
     }
-    .bubble-time {
-      font-size: 10px;
-      opacity: 0.6;
-      margin-top: 3px;
-      text-align: right;
+
+    /* Conteúdo textual com espaço pro tempo no final */
+    .bubble-text {
+      padding-right: 56px;
+      white-space: pre-wrap;
     }
-    .bubble img {
-      width: 160px;
-      height: 160px;
+
+    /* Timestamp inline no canto inferior direito */
+    .bubble-meta {
+      position: absolute;
+      bottom: 4px;
+      right: 8px;
+      font-size: 10.5px;
+      opacity: 0.75;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      pointer-events: none;
+      line-height: 1;
+    }
+    .bubble-mine .bubble-meta { color: rgba(255,255,255,0.85); }
+    .bubble-other .bubble-meta { color: var(--text3); }
+
+    .read-check {
+      display: inline-flex;
+      font-size: 14px;
+      line-height: 1;
+      letter-spacing: -2px;
+      font-weight: 700;
+    }
+    .read-check.seen { color: #5dd5ff; }
+
+    /* Imagem dentro do bubble */
+    .bubble-img-wrap {
+      margin: -6px -10px -6px -10px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bubble-img-wrap img {
+      width: 240px;
+      max-width: 100%;
+      height: auto;
+      max-height: 320px;
       object-fit: cover;
-      border-radius: 12px;
       display: block;
       cursor: pointer;
     }
-    .bubble audio {
-      width: 200px;
-      border-radius: 8px;
+    .bubble-img-wrap .bubble-meta {
+      bottom: 6px;
+      right: 8px;
+      background: rgba(0,0,0,0.4);
+      padding: 2px 6px;
+      border-radius: 50px;
+      color: #fff !important;
+      opacity: 1;
     }
-    .icon-btn {
-      background: none;
-      border: none;
-      font-size: 22px;
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 8px;
-      color: var(--text2);
-      transition: color 0.2s;
+    .bubble.has-img { padding: 4px 4px 4px 4px; }
+    .bubble.has-img .bubble-meta { position: absolute; bottom: 10px; right: 12px; }
+
+    /* Áudio custom */
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 200px;
+      padding-right: 48px;
     }
-    .icon-btn:hover { color: var(--text); }
-    .send-btn {
-      width: 40px;
-      height: 40px;
+    .audio-play {
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #9c7cff);
+      background: rgba(255,255,255,0.2);
       border: none;
-      color: #fff;
-      font-size: 18px;
+      color: inherit;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      font-size: 14px;
+    }
+    .bubble-other .audio-play { background: var(--accent); color: #fff; }
+    .audio-bars {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 20px;
+    }
+    .audio-bar {
+      flex: 1;
+      background: currentColor;
+      opacity: 0.4;
+      border-radius: 2px;
+      height: 100%;
+    }
+    .audio-bar.playing { opacity: 1; }
+    .audio-duration {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    /* Ícones do header e input */
+    .icon-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      color: var(--text2);
+      transition: color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover { color: var(--text); background: var(--bg3); }
+    .icon-btn svg { width: 22px; height: 22px; }
+
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px var(--accent-glow);
+      transition: transform 0.15s;
+    }
+    .send-btn:hover { transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    /* Status no header */
+    .chat-status-online {
+      color: #4ade80;
+      font-size: 12px;
+    }
+    .chat-status-offline {
+      color: var(--text3);
+      font-size: 12px;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      margin-right: 5px;
+      vertical-align: middle;
+      box-shadow: 0 0 6px #4ade80;
     }
   </style>
 </head>
@@ -148,23 +319,33 @@
 
 <div class="chat-wrap">
   <div class="chat-header">
-    <button class="icon-btn" onclick="history.back()">←</button>
+    <button class="icon-btn" onclick="history.back()" aria-label="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <div id="chatAvatar"></div>
-    <div style="flex:1">
-      <div id="chatName" style="font-weight:700;font-size:15px;font-family:'Syne',sans-serif"></div>
+    <div style="flex:1;min-width:0">
+      <div id="chatName" style="font-weight:700;font-size:15px;font-family:'Syne',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
       <div id="chatSub" style="font-size:12px;color:var(--text3)"></div>
     </div>
-    <button class="icon-btn" id="btnGroupManage" style="display:none">⚙️</button>
+    <button class="icon-btn" id="btnGroupManage" style="display:none" aria-label="Configurações">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </div>
 
   <div class="chat-messages" id="chatMessages"></div>
 
   <div class="chat-input-bar">
-    <button class="icon-btn" id="btnRecord">🎤</button>
-    <button class="icon-btn" id="btnSendImg">🖼️</button>
+    <button class="icon-btn" id="btnRecord" aria-label="Gravar áudio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSendImg" aria-label="Enviar imagem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </button>
     <input type="file" id="imgFileInput" accept="image/*" style="display:none"/>
-    <input class="input" id="msgInput" placeholder="Mensagem..." style="flex:1;border-radius:50px;padding:10px 16px"/>
-    <button class="send-btn" id="btnSend">→</button>
+    <input class="input" id="msgInput" placeholder="Mensagem..." style="flex:1;border-radius:50px;padding:10px 16px;background:var(--bg3);border:none"/>
+    <button class="send-btn" id="btnSend" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
   </div>
 </div>
 
@@ -211,19 +392,60 @@ async function getUser(uid) {
   return userCache[uid];
 }
 
+function timeAgoShort(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return `há ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `há ${d}d`;
+  return new Date(ts).toLocaleDateString('pt-BR');
+}
+
+function renderStatus(ultimaConexao) {
+  const subEl = document.getElementById('chatSub');
+  if (!ultimaConexao) { subEl.textContent = 'conversa privada'; return; }
+  const diff = Date.now() - ultimaConexao;
+  if (diff < 3 * 60000) {
+    subEl.innerHTML = '<span class="status-dot"></span><span class="chat-status-online">online</span>';
+  } else {
+    subEl.innerHTML = `<span class="chat-status-offline">visto ${timeAgoShort(ultimaConexao)}</span>`;
+  }
+}
+
 onAuthStateChanged(auth, async user => {
   if (!user) return window.location.href = 'index.html';
   currentUser = user;
 
+  // Atualiza minha presença
+  set(ref(db, `usuarios/${user.uid}/ultimaConexao`), Date.now()).catch(() => {});
+  // Heartbeat a cada 60s enquanto a aba estiver aberta
+  setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      set(ref(db, `usuarios/${user.uid}/ultimaConexao`), Date.now()).catch(() => {});
+    }
+  }, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      set(ref(db, `usuarios/${user.uid}/ultimaConexao`), Date.now()).catch(() => {});
+    }
+  });
+
   if (tipo === 'privado' && outroUid) {
     conversaId = [user.uid, outroUid].sort().join('_');
     const u = await getUser(outroUid);
-    document.getElementById('chatName').textContent = `${u.emoji} ${u.username}`;
+    document.getElementById('chatName').textContent = u.username;
     document.getElementById('chatSub').textContent = 'conversa privada';
     const av = document.getElementById('chatAvatar');
     av.innerHTML = u.fotoPerfil
-      ? `<img class="avatar" src="${u.fotoPerfil}" style="width:36px;height:36px"/>`
-      : `<div class="avatar-placeholder" style="width:36px;height:36px;font-size:15px;border:none">${u.emoji}</div>`;
+      ? `<img class="avatar" src="${u.fotoPerfil}" style="width:38px;height:38px"/>`
+      : `<div class="avatar-placeholder" style="width:38px;height:38px;font-size:16px;border:none">${u.emoji}</div>`;
+    // Listener de presença do outro user
+    onValue(ref(db, `usuarios/${outroUid}/ultimaConexao`), snap => {
+      renderStatus(snap.val());
+    });
   } else if (paramConvId) {
     conversaId = paramConvId;
     const snap = await get(ref(db, 'conversas/' + conversaId));
@@ -231,12 +453,25 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('chatName').textContent = conv.nomeGrupo || 'Grupo';
     participantes = conv.participantes || {};
     document.getElementById('chatSub').textContent = Object.keys(participantes).length + ' membros';
-    document.getElementById('chatAvatar').innerHTML = `<div class="avatar-placeholder" style="width:36px;height:36px;font-size:15px;border:none">👥</div>`;
+    document.getElementById('chatAvatar').innerHTML = `<div class="avatar-placeholder" style="width:38px;height:38px;font-size:16px;border:none">👥</div>`;
     document.getElementById('btnGroupManage').style.display = '';
   }
 
   loadMessages();
 });
+
+function dayLabel(ts) {
+  const d = new Date(ts);
+  const today = new Date();
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const sameDay = (a, b) => a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+  if (sameDay(d, today)) return 'Hoje';
+  if (sameDay(d, yest)) return 'Ontem';
+  const diffDays = (today - d) / 86400000;
+  if (diffDays < 7) return d.toLocaleDateString('pt-BR', { weekday: 'long' });
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+function dayKey(ts) { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
 
 function loadMessages() {
   const container = document.getElementById('chatMessages');
@@ -244,61 +479,98 @@ function loadMessages() {
   onValue(ref(db, `conversas/${conversaId}/mensagens`), async snap => {
     console.log('[CHAT DEBUG] listener fired. exists=', snap.exists(), 'size=', snap.size);
     container.innerHTML = '';
-    if (!snap.exists()) {
-      console.log('[CHAT DEBUG] snap vazio — nenhuma mensagem nessa conversaId');
-      return;
-    }
+    if (!snap.exists()) return;
 
     const msgs = [];
     snap.forEach(c => { msgs.push({ id: c.key, ...c.val() }); });
     msgs.sort((a, b) => a.timestamp - b.timestamp);
     console.log('[CHAT DEBUG] ' + msgs.length + ' msgs carregadas. tipos:', msgs.map(m => m.texto ? 'texto' : m.imagemUrl ? 'imagem' : m.audioUrl ? 'audio' : 'outro'));
 
-    for (const m of msgs) {
+    let lastDayKey = null;
+    let lastSenderUid = null;
+
+    for (let i = 0; i < msgs.length; i++) {
+      const m = msgs[i];
       try {
         const u = await getUser(m.uid);
         const isMine = m.uid === currentUser.uid;
+        const thisDayKey = dayKey(m.timestamp);
+
+        // Separador de data
+        if (thisDayKey !== lastDayKey) {
+          const sep = document.createElement('div');
+          sep.className = 'date-sep';
+          sep.textContent = dayLabel(m.timestamp);
+          container.appendChild(sep);
+          lastDayKey = thisDayKey;
+          lastSenderUid = null;
+        }
+
+        const sameSender = lastSenderUid === m.uid;
+        const isLastOfGroup = i === msgs.length - 1 || msgs[i + 1].uid !== m.uid || dayKey(msgs[i + 1].timestamp) !== thisDayKey;
 
         const wrap = document.createElement('div');
-        wrap.style.display = 'flex';
-        wrap.style.flexDirection = 'column';
-        wrap.style.alignSelf = isMine ? 'flex-end' : 'flex-start';
-        wrap.style.maxWidth = '75%';
+        wrap.className = `msg-wrap ${isMine ? 'mine' : 'other'}${sameSender ? ' same-sender' : ''}${isLastOfGroup ? ' tail' : ''}`;
 
         const bubble = document.createElement('div');
         bubble.className = `bubble ${isMine ? 'bubble-mine' : 'bubble-other'}`;
 
-        if (!isMine && tipo !== 'privado') {
+        // Nome (só em grupo, só no primeiro da sequência, só se não for meu)
+        if (!isMine && tipo !== 'privado' && !sameSender) {
           const nameDiv = document.createElement('div');
           nameDiv.className = 'bubble-name';
           nameDiv.textContent = u.username;
           bubble.appendChild(nameDiv);
         }
 
+        // Conteúdo
         if (m.texto) {
-          bubble.appendChild(document.createTextNode(m.texto));
+          const textDiv = document.createElement('div');
+          textDiv.className = 'bubble-text';
+          textDiv.textContent = m.texto;
+          bubble.appendChild(textDiv);
         } else if (m.audioUrl) {
-          const audio = document.createElement('audio');
-          audio.controls = true;
-          audio.src = m.audioUrl;
-          bubble.appendChild(audio);
+          bubble.appendChild(buildAudioPlayer(m.audioUrl, isMine));
         } else if (m.imagemUrl) {
+          bubble.classList.add('has-img');
+          const imgWrap = document.createElement('div');
+          imgWrap.className = 'bubble-img-wrap';
           const img = document.createElement('img');
           img.src = m.imagemUrl;
+          img.loading = 'lazy';
           img.onclick = () => {
             document.getElementById('imgModalSrc').src = m.imagemUrl;
             document.getElementById('imgModal').style.display = 'flex';
           };
-          bubble.appendChild(img);
+          imgWrap.appendChild(img);
+          bubble.appendChild(imgWrap);
         }
 
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'bubble-time';
-        timeDiv.textContent = timeStr(m.timestamp);
-        bubble.appendChild(timeDiv);
+        // Meta (horário + ✓✓)
+        const meta = document.createElement('div');
+        meta.className = 'bubble-meta';
+        const timeSpan = document.createElement('span');
+        timeSpan.textContent = timeStr(m.timestamp);
+        meta.appendChild(timeSpan);
 
+        if (isMine) {
+          const check = document.createElement('span');
+          const seenByOther = m.lido && Object.keys(m.lido).some(uid => uid !== currentUser.uid);
+          check.className = 'read-check' + (seenByOther ? ' seen' : '');
+          check.textContent = seenByOther ? '✓✓' : '✓';
+          meta.appendChild(check);
+        }
+
+        bubble.appendChild(meta);
         wrap.appendChild(bubble);
         container.appendChild(wrap);
+
+        lastSenderUid = m.uid;
+
+        // Marca como lido (não bloqueante)
+        if (!isMine && (!m.lido || !m.lido[currentUser.uid])) {
+          set(ref(db, `conversas/${conversaId}/mensagens/${m.id}/lido/${currentUser.uid}`), Date.now()).catch(() => {});
+        }
       } catch (error) {
         console.error('Erro ao renderizar mensagem:', m, error);
       }
@@ -306,6 +578,78 @@ function loadMessages() {
 
     container.scrollTop = container.scrollHeight;
   });
+}
+
+// Player de áudio custom (play/pause + barras + duração)
+function buildAudioPlayer(url, isMine) {
+  const wrap = document.createElement('div');
+  wrap.className = 'audio-player';
+
+  const playBtn = document.createElement('button');
+  playBtn.className = 'audio-play';
+  playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+
+  const audio = new Audio(url);
+  audio.preload = 'metadata';
+
+  const bars = document.createElement('div');
+  bars.className = 'audio-bars';
+  const barCount = 22;
+  for (let i = 0; i < barCount; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'audio-bar';
+    // altura pseudo-aleatória determinística pra parecer waveform
+    const h = 25 + Math.abs(Math.sin(i * 1.7)) * 70;
+    bar.style.height = h + '%';
+    bars.appendChild(bar);
+  }
+
+  const dur = document.createElement('span');
+  dur.className = 'audio-duration';
+  dur.textContent = '0:00';
+
+  audio.addEventListener('loadedmetadata', () => {
+    if (isFinite(audio.duration)) {
+      dur.textContent = formatDuration(audio.duration);
+    }
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    const pct = audio.duration ? (audio.currentTime / audio.duration) : 0;
+    const lit = Math.round(pct * barCount);
+    bars.querySelectorAll('.audio-bar').forEach((b, idx) => {
+      b.classList.toggle('playing', idx < lit);
+    });
+    if (!audio.paused) dur.textContent = formatDuration(audio.currentTime);
+  });
+
+  audio.addEventListener('ended', () => {
+    playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    bars.querySelectorAll('.audio-bar').forEach(b => b.classList.remove('playing'));
+    dur.textContent = formatDuration(audio.duration || 0);
+  });
+
+  playBtn.onclick = () => {
+    if (audio.paused) {
+      audio.play();
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+    } else {
+      audio.pause();
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    }
+  };
+
+  wrap.appendChild(playBtn);
+  wrap.appendChild(bars);
+  wrap.appendChild(dur);
+  return wrap;
+}
+
+function formatDuration(s) {
+  if (!isFinite(s) || s < 0) s = 0;
+  const mins = Math.floor(s / 60);
+  const secs = Math.floor(s % 60);
+  return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
 // Send text
@@ -342,7 +686,6 @@ async function sendText() {
     });
 
     document.getElementById('msgInput').value = '';
-    toast('Mensagem enviada!', 'success');
   } catch (e) {
     toast('Erro ao enviar: ' + e.message, 'error');
   }

@@ -1,16 +1,13 @@
 // ============================================
-// SUPABASE STORAGE HELPER - COM VALIDAÇÕES
+// FIREBASE STORAGE HELPER - COM VALIDAÇÕES
 // ============================================
 
-import { SUPABASE_CONFIG } from "./config.js";
+import { storage } from "./config.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 import { validateFileUpload, validateImageDimensions } from "./validation.js";
 
-const SUPABASE_URL = SUPABASE_CONFIG.url;
-const ANON_JWT = SUPABASE_CONFIG.anonKey;
-const BUCKET = SUPABASE_CONFIG.bucket;
-
 /**
- * Faz upload de arquivo para Supabase Storage com validações
+ * Faz upload de arquivo para Firebase Storage com validações
  * @param {File} file - Arquivo a fazer upload
  * @param {string} path - Caminho no storage (ex: posts/user123/file)
  * @param {Object} options - Opções de validação
@@ -37,59 +34,21 @@ export async function uploadFile(file, path, options = {}, onProgress = null) {
     }
   }
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const url = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`;
+  try {
+    // Criar referência do arquivo
+    const fileRef = ref(storage, path);
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        const progress = Math.round(e.loaded / e.total * 100);
-        onProgress(progress);
-      }
-    };
+    // Fazer upload
+    const snapshot = await uploadBytes(fileRef, file);
 
-    xhr.onload = () => {
-      if (xhr.status === 200 || xhr.status === 201) {
-        const publicUrl = getPublicUrl(path);
-        resolve(publicUrl);
-      } else {
-        let errorMsg = `Upload falhou: ${xhr.status}`;
-        try {
-          const errorData = JSON.parse(xhr.responseText);
-          errorMsg += ` - ${errorData.message || xhr.responseText}`;
-        } catch {
-          errorMsg += ` - ${xhr.responseText || 'Erro desconhecido'}`;
-        }
-        reject(new Error(errorMsg));
-      }
-    };
+    // Obter URL pública
+    const downloadUrl = await getDownloadURL(snapshot.ref);
 
-    xhr.onerror = () => {
-      reject(new Error("Erro de rede no upload"));
-    };
-
-    xhr.ontimeout = () => {
-      reject(new Error("Upload expirou - tente novamente"));
-    };
-
-    xhr.timeout = 30000; // 30 segundos
-
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("Authorization", `Bearer ${ANON_JWT}`);
-    xhr.setRequestHeader("x-upsert", "true");
-    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-
-    xhr.send(file);
-  });
-}
-
-/**
- * Obtem URL pública de um arquivo
- * @param {string} path - Caminho do arquivo no storage
- * @returns {string} URL pública
- */
-export function getPublicUrl(path) {
-  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+    return downloadUrl;
+  } catch (error) {
+    console.error('Erro no upload:', error);
+    throw new Error(`Upload falhou: ${error.message}`);
+  }
 }
 
 /**
@@ -106,8 +65,8 @@ export function uniquePath(folder, filename) {
 }
 
 /**
- * Remove arquivo do Supabase Storage
- * Nota: Requer implementação no backend por segurança
+ * Remove arquivo do Firebase Storage
+ * Nota: Requer implementação segura via Cloud Functions
  * @param {string} path - Caminho do arquivo
  * @returns {Promise}
  */

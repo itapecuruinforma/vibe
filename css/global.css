@@ -839,3 +839,55 @@ textarea.input { resize: none; line-height: 1.5; }
   font-size: 11px;
   font-weight: 700;
 }
+
+/* ============================================
+   MODERAÇÃO — Menu contextual e modais
+   ============================================ */
+
+.mod-menu {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: mod-menu-in 0.12s ease-out;
+}
+
+@keyframes mod-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.mod-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.mod-menu-item:hover {
+  background: var(--bg3);
+}
+
+.mod-menu-item.danger {
+  color: #ff5c75;
+}
+
+.mod-menu-item.danger:hover {
+  background: rgba(255, 92, 117, 0.08);
+}
+
+.mod-menu-item span {
+  flex: 1;
+}

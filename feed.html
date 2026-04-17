@@ -161,6 +161,10 @@ import {
   escapeHTML, sanitizeText, validateCaption, validateComment, validateVideoDuration
 } from "./js/validation.js";
 import { rateLimiter } from "./js/rateLimiter.js";
+import {
+  watchBlockedUsers, isBlocked, blockUser, denunciar,
+  abrirModalDenuncia, abrirMenuContexto
+} from "./js/moderation.js";
 
 let currentUser = null;
 let myProfile = null;
@@ -198,6 +202,8 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   const snap = await get(ref(db, 'usuarios/' + user.uid));
   myProfile = snap.val() || {};
+  // Escuta lista de bloqueados em tempo real (atualiza cache do moderation.js)
+  watchBlockedUsers(currentUser.uid, () => loadFeed());
   document.getElementById('app').style.display = '';
   loadStories();
   loadFeed();
@@ -312,12 +318,15 @@ function loadFeed() {
     const posts = [];
     snap.forEach(child => { posts.unshift({ id: child.key, ...child.val() }); });
 
-    if (posts.length === 0) {
+    // Filtra posts de usuários bloqueados
+    const visiblePosts = posts.filter(p => !isBlocked(p.uid));
+
+    if (visiblePosts.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhum post ainda. Seja o primeiro!</p></div>';
       return;
     }
 
-    for (const post of posts) {
+    for (const post of visiblePosts) {
       const card = await buildPostCard(post);
       container.appendChild(card);
     }
@@ -378,9 +387,7 @@ async function buildPostCard(post) {
       <div class="post-header-info">
         <div class="post-username" onclick="goProfile('${post.uid}')">${u.username}</div>
       </div>
-      ${post.uid === currentUser.uid
-        ? `<button class="action-btn" style="color:var(--text3)" onclick="deletePost('${post.id}')">${SVG_MORE}</button>`
-        : ''}
+      <button class="action-btn post-more-btn" style="color:var(--text3)" data-post-id="${post.id}" data-post-uid="${post.uid}" aria-label="Mais opções">${SVG_MORE}</button>
     </div>
     ${bodyHtml}
     <div class="post-actions">
@@ -403,6 +410,22 @@ async function buildPostCard(post) {
 
   // Like button
   card.querySelector(`#like-${post.id}`).onclick = () => toggleLike(post.id);
+
+  // Menu de ⋯ (denunciar / bloquear / deletar)
+  const moreBtn = card.querySelector('.post-more-btn');
+  if (moreBtn) {
+    moreBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isOwn = post.uid === currentUser.uid;
+      const items = isOwn
+        ? [{ label: 'Excluir post', icon: '🗑️', danger: true, onClick: () => deletePost(post.id) }]
+        : [
+            { label: 'Denunciar', icon: '🚩', onClick: () => denunciarPost(post.id, post.uid) },
+            { label: 'Bloquear usuário', icon: '🚫', danger: true, onClick: () => bloquearUsuario(post.uid, u.username) }
+          ];
+      abrirMenuContexto(moreBtn, items);
+    };
+  }
 
   // Handlers específicos por tipo
   if (tipo === 'foto') {
@@ -493,6 +516,29 @@ window.sharePost = async (postId) => {
     toast('Link copiado!', 'success');
   }
 };
+
+async function denunciarPost(postId, postUid) {
+  const res = await abrirModalDenuncia('esse post');
+  if (!res) return;
+  try {
+    await denunciar(currentUser.uid, 'post', postId, res.motivoId, res.descricao, { postUid });
+    toast('Denúncia enviada. Obrigado!', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao enviar denúncia', 'error');
+  }
+}
+
+async function bloquearUsuario(targetUid, username) {
+  if (!confirm(`Bloquear @${username}?\n\nVocê não verá mais posts, mensagens ou comentários dessa pessoa.`)) return;
+  try {
+    await blockUser(currentUser.uid, targetUid);
+    toast(`@${username} bloqueado`, 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao bloquear', 'error');
+  }
+}
 
 async function toggleLike(postId) {
   const likeRef = ref(db, `posts/${postId}/curtidas/${currentUser.uid}`);

@@ -69,6 +69,7 @@ export async function uploadFile(file, path, options = {}, onProgress = null) {
     xhr.timeout = 30000;
 
     xhr.open("POST", url);
+    xhr.setRequestHeader("apikey", ANON_JWT);
     xhr.setRequestHeader("Authorization", `Bearer ${ANON_JWT}`);
     xhr.setRequestHeader("x-upsert", "true");
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");

@@ -19,8 +19,8 @@ const firebaseConfig = {
 
 // Supabase config
 const SUPABASE_CONFIG = {
-  url: "https://tdsisbsmdvzjotuwqsn.supabase.co",
-  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc2MzgwNzcxLCJleHAiOjIwOTE3NDA3NzF9.j9W8pNSAydN0CmJxopeOvqNuHh1jEwuRSJQp_yuWXRs",
+  url: "https://tdsisbsmdvzjotzuwqsn.supabase.co",
+  anonKey: "sb_publishable_qFu9C92K7aHXSWFywJVfQA_mCAeE8su",
   bucket: "vibe"
 };
 

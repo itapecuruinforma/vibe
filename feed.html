@@ -284,7 +284,7 @@ function loadFeed() {
   onValue(postsRef, async snap => {
     container.innerHTML = '';
     const posts = [];
-    snap.forEach(child => posts.unshift({ id: child.key, ...child.val() }));
+    snap.forEach(child => { posts.unshift({ id: child.key, ...child.val() }); });
 
     if (posts.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhum post ainda. Seja o primeiro!</p></div>';
@@ -457,7 +457,7 @@ function loadComments(postId) {
       return;
     }
     const items = [];
-    snap.forEach(c => items.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { items.push({ id: c.key, ...c.val() }); });
     items.sort((a, b) => a.timestamp - b.timestamp);
 
     for (const c of items) {

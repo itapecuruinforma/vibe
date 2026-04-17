@@ -83,7 +83,7 @@ function loadNotifications() {
       return;
     }
     const notifs = [];
-    snap.forEach(c => notifs.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { notifs.push({ id: c.key, ...c.val() }); });
     notifs.sort((a, b) => b.timestamp - a.timestamp);
 
     for (const n of notifs) {

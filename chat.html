@@ -250,7 +250,7 @@ function loadMessages() {
     }
 
     const msgs = [];
-    snap.forEach(c => msgs.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { msgs.push({ id: c.key, ...c.val() }); });
     msgs.sort((a, b) => a.timestamp - b.timestamp);
     console.log('[CHAT DEBUG] ' + msgs.length + ' msgs carregadas. tipos:', msgs.map(m => m.texto ? 'texto' : m.imagemUrl ? 'imagem' : m.audioUrl ? 'audio' : 'outro'));
 

@@ -373,7 +373,7 @@ document.getElementById('btnCancelAudio').onclick = () => document.getElementByI
 
 document.getElementById('btnSendAudio').onclick = async () => {
   const blob = new Blob(audioChunks, { type: 'audio/webm' });
-  const file = new File([blob], `audio_${Date.now()}.webm`);
+  const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
   try {
     const path = uniquePath(`audios/${conversaId}`, file.name);
     const url = await uploadFile(file, path);

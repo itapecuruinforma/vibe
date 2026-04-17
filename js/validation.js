@@ -158,7 +158,7 @@ export function validateEmoji(emoji) {
 export function validateFileUpload(file, options = {}) {
   const {
     maxSize = 5 * 1024 * 1024, // 5MB padrão
-    allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav'],
+    allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg'],
     fileTypes = ['images', 'audio'] // 'images', 'audio', 'both'
   } = options;
 

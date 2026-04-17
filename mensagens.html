@@ -59,6 +59,7 @@ import { auth, db } from "./js/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { ref, get, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { sanitizeText } from "./js/validation.js";
+import { watchBlockedUsers, isBlocked } from "./js/moderation.js";
 
 let currentUser = null;
 let allUsers = {};
@@ -79,6 +80,7 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   const snap = await get(ref(db, 'usuarios'));
   snap.forEach(c => { allUsers[c.key] = { uid: c.key, ...c.val() }; });
+  watchBlockedUsers(currentUser.uid, () => { loadChats(); loadUserList(); });
   document.getElementById('app').style.display = '';
   loadChats();
   loadUserList();
@@ -97,6 +99,9 @@ function loadChats() {
         (v.tipo === 'grupo' && v.participantes && v.participantes[currentUser.uid]) ||
         (!v.tipo && c.key.includes(currentUser.uid))
       ) {
+        // Esconde conversa privada com usuário bloqueado
+        const otherUid = c.key.split('_').find(u => u !== currentUser.uid);
+        if (otherUid && isBlocked(otherUid)) return;
         convs.push({ id: c.key, ...v });
       }
     });
@@ -195,7 +200,8 @@ function loadChats() {
 
 function loadUserList() {
   const ul = document.getElementById('userList');
-  const entries = Object.entries(allUsers).filter(([uid]) => uid !== currentUser.uid);
+  ul.innerHTML = '';
+  const entries = Object.entries(allUsers).filter(([uid]) => uid !== currentUser.uid && !isBlocked(uid));
   entries.forEach(([uid, u]) => {
     const div = document.createElement('div');
     div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer';

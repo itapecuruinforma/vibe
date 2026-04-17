@@ -104,6 +104,10 @@ import {
   validateBio, validateEmoji, validateFileUpload, sanitizeText
 } from "./js/validation.js";
 import { rateLimiter } from "./js/rateLimiter.js";
+import {
+  getBlockedUsers, blockUser, unblockUser, denunciar,
+  abrirModalDenuncia, abrirMenuContexto
+} from "./js/moderation.js";
 
 const params = new URLSearchParams(location.search);
 let profileUid = params.get('uid');
@@ -127,7 +131,74 @@ onAuthStateChanged(auth, async user => {
   loadProfile();
   loadPosts();
   loadLikedPosts();
+  setupTopbarMenu();
 });
+
+function setupTopbarMenu() {
+  const btn = document.getElementById('btnMenu');
+  if (!btn) return;
+  btn.onclick = async (e) => {
+    e.stopPropagation();
+    if (isMyProfile) {
+      // Menu próprio: editar / sair
+      abrirMenuContexto(btn, [
+        { label: 'Editar perfil', icon: '✏️', onClick: () => document.getElementById('editModal').classList.remove('hidden') },
+        { label: 'Sair', icon: '🚪', danger: true, onClick: async () => { await signOut(auth); window.location.href = 'index.html'; } }
+      ]);
+    } else {
+      // Menu alvo: denunciar / bloquear ou desbloquear
+      const blocked = await getBlockedUsers(currentUser.uid);
+      const isBlocked = !!blocked[profileUid];
+      abrirMenuContexto(btn, [
+        { label: 'Denunciar usuário', icon: '🚩', onClick: denunciarPerfil },
+        isBlocked
+          ? { label: 'Desbloquear', icon: '✅', onClick: desbloquearPerfil }
+          : { label: 'Bloquear', icon: '🚫', danger: true, onClick: bloquearPerfil }
+      ]);
+    }
+  };
+}
+
+async function denunciarPerfil() {
+  const snap = await get(ref(db, 'usuarios/' + profileUid));
+  const uname = (snap.val() || {}).username || 'esse usuário';
+  const res = await abrirModalDenuncia(`@${uname}`);
+  if (!res) return;
+  try {
+    await denunciar(currentUser.uid, 'usuario', profileUid, res.motivoId, res.descricao);
+    toast('Denúncia enviada. Obrigado!', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao enviar denúncia', 'error');
+  }
+}
+
+async function bloquearPerfil() {
+  const snap = await get(ref(db, 'usuarios/' + profileUid));
+  const uname = (snap.val() || {}).username || 'usuário';
+  if (!confirm(`Bloquear @${uname}?\n\nVocê não verá mais posts, mensagens ou comentários dessa pessoa.`)) return;
+  try {
+    await blockUser(currentUser.uid, profileUid);
+    toast(`@${uname} bloqueado`, 'success');
+    loadProfile(); // re-render pra atualizar botões
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao bloquear', 'error');
+  }
+}
+
+async function desbloquearPerfil() {
+  const snap = await get(ref(db, 'usuarios/' + profileUid));
+  const uname = (snap.val() || {}).username || 'usuário';
+  try {
+    await unblockUser(currentUser.uid, profileUid);
+    toast(`@${uname} desbloqueado`, 'success');
+    loadProfile();
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao desbloquear', 'error');
+  }
+}
 
 async function loadProfile() {
   const snap = await get(ref(db, 'usuarios/' + profileUid));
@@ -176,22 +247,34 @@ async function loadProfile() {
     document.getElementById('btnEdit').onclick = () => document.getElementById('editModal').classList.remove('hidden');
     document.getElementById('btnLogout').onclick = async () => { await signOut(auth); window.location.href = 'index.html'; };
   } else {
-    const isFollowing = (await get(ref(db, `usuarios/${profileUid}/seguidores/${currentUser.uid}`))).exists();
-    const followBtn = document.createElement('button');
-    followBtn.className = `btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`;
-    followBtn.style.flex = '1';
-    followBtn.textContent = isFollowing ? 'Seguindo' : 'Seguir';
-    followBtn.onclick = () => toggleFollow(followBtn, isFollowing);
-    btns.appendChild(followBtn);
+    // Verifica se o currentUser bloqueou este perfil
+    const blocked = await getBlockedUsers(currentUser.uid);
+    const isBlocked = !!blocked[profileUid];
 
-    const chatBtn = document.createElement('button');
-    chatBtn.className = 'btn btn-outline';
-    chatBtn.textContent = '💬 Mensagem';
-    chatBtn.onclick = () => {
-      const convId = [currentUser.uid, profileUid].sort().join('_');
-      window.location.href = `chat.html?tipo=privado&outroUid=${profileUid}`;
-    };
-    btns.appendChild(chatBtn);
+    if (isBlocked) {
+      const unblockBtn = document.createElement('button');
+      unblockBtn.className = 'btn btn-outline';
+      unblockBtn.style.flex = '1';
+      unblockBtn.innerHTML = '🚫 Bloqueado — desbloquear';
+      unblockBtn.onclick = desbloquearPerfil;
+      btns.appendChild(unblockBtn);
+    } else {
+      const isFollowing = (await get(ref(db, `usuarios/${profileUid}/seguidores/${currentUser.uid}`))).exists();
+      const followBtn = document.createElement('button');
+      followBtn.className = `btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`;
+      followBtn.style.flex = '1';
+      followBtn.textContent = isFollowing ? 'Seguindo' : 'Seguir';
+      followBtn.onclick = () => toggleFollow(followBtn, isFollowing);
+      btns.appendChild(followBtn);
+
+      const chatBtn = document.createElement('button');
+      chatBtn.className = 'btn btn-outline';
+      chatBtn.textContent = '💬 Mensagem';
+      chatBtn.onclick = () => {
+        window.location.href = `chat.html?tipo=privado&outroUid=${profileUid}`;
+      };
+      btns.appendChild(chatBtn);
+    }
   }
 }
 

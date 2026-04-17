@@ -362,6 +362,9 @@ import {
   validateMessage, validateFileUpload, sanitizeText
 } from "./js/validation.js";
 import { rateLimiter } from "./js/rateLimiter.js";
+import {
+  denunciar, abrirModalDenuncia, abrirMenuContexto
+} from "./js/moderation.js";
 
 const params = new URLSearchParams(location.search);
 const tipo = params.get('tipo');
@@ -565,6 +568,11 @@ function loadMessages() {
         wrap.appendChild(bubble);
         container.appendChild(wrap);
 
+        // Long-press em msgs de outros → menu "Denunciar"
+        if (!isMine) {
+          attachLongPressReport(wrap, bubble, m);
+        }
+
         lastSenderUid = m.uid;
 
         // Marca como lido (não bloqueante)
@@ -578,6 +586,60 @@ function loadMessages() {
 
     container.scrollTop = container.scrollHeight;
   });
+}
+
+// Long-press em msg de outro → menu de denúncia
+function attachLongPressReport(wrap, bubble, msg) {
+  let pressTimer = null;
+  let pressed = false;
+
+  const start = (e) => {
+    pressed = true;
+    pressTimer = setTimeout(() => {
+      if (!pressed) return;
+      // Feedback visual
+      bubble.style.transition = 'transform 0.12s';
+      bubble.style.transform = 'scale(0.97)';
+      setTimeout(() => { bubble.style.transform = ''; }, 150);
+
+      abrirMenuContexto(bubble, [
+        { label: 'Denunciar mensagem', icon: '🚩', onClick: () => denunciarMensagem(msg) }
+      ]);
+    }, 500);
+  };
+
+  const cancel = () => {
+    pressed = false;
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  };
+
+  wrap.addEventListener('touchstart', start, { passive: true });
+  wrap.addEventListener('touchend', cancel);
+  wrap.addEventListener('touchmove', cancel);
+  wrap.addEventListener('mousedown', start);
+  wrap.addEventListener('mouseup', cancel);
+  wrap.addEventListener('mouseleave', cancel);
+  wrap.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    abrirMenuContexto(bubble, [
+      { label: 'Denunciar mensagem', icon: '🚩', onClick: () => denunciarMensagem(msg) }
+    ]);
+  });
+}
+
+async function denunciarMensagem(msg) {
+  const res = await abrirModalDenuncia('essa mensagem');
+  if (!res) return;
+  try {
+    await denunciar(currentUser.uid, 'mensagem', msg.id, res.motivoId, res.descricao, {
+      conversaId: conversaId,
+      autorMsg: msg.uid
+    });
+    toast('Denúncia enviada. Obrigado!', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao enviar denúncia', 'error');
+  }
 }
 
 // Player de áudio custom (play/pause + barras + duração)

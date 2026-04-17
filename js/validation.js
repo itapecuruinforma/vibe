@@ -158,7 +158,7 @@ export function validateEmoji(emoji) {
 export function validateFileUpload(file, options = {}) {
   const {
     maxSize = 5 * 1024 * 1024, // 5MB padrão
-    allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg'],
+    allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'video/mp4', 'video/webm', 'video/quicktime'],
     fileTypes = ['images', 'audio'] // 'images', 'audio', 'both'
   } = options;
 
@@ -221,6 +221,36 @@ export async function validateImageDimensions(file, options = {}) {
       resolve('Erro ao validar dimensões da imagem');
     };
     img.src = URL.createObjectURL(file);
+  });
+}
+
+/**
+ * Valida duração de vídeo
+ * @param {File} file - Arquivo de vídeo
+ * @param {number} maxSeconds - Duração máxima em segundos
+ * @returns {Promise<string|null>} Mensagem de erro ou null se válido
+ */
+export async function validateVideoDuration(file, maxSeconds = 30) {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('video/')) {
+      resolve('Arquivo não é um vídeo');
+      return;
+    }
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src);
+      if (video.duration > maxSeconds) {
+        resolve(`Vídeo muito longo. Máximo: ${maxSeconds}s (seu vídeo tem ${Math.round(video.duration)}s)`);
+      } else {
+        resolve(null);
+      }
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      resolve('Erro ao ler o vídeo');
+    };
+    video.src = URL.createObjectURL(file);
   });
 }
 

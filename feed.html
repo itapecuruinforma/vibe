@@ -80,12 +80,38 @@
       <h3 style="font-family:'Syne',sans-serif">Novo post</h3>
       <button class="btn-ghost" id="closeNewPost" style="font-size:22px;padding:4px 8px">×</button>
     </div>
-    <div id="postPreviewWrap" class="hidden" style="margin-bottom:12px">
-      <img id="postPreview" style="width:100%;border-radius:12px;object-fit:cover;max-height:300px"/>
+
+    <!-- Tabs de tipo -->
+    <div class="post-type-tabs" id="postTypeTabs">
+      <button class="post-type-tab active" data-type="foto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Foto
+      </button>
+      <button class="post-type-tab" data-type="video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Vídeo
+      </button>
+      <button class="post-type-tab" data-type="texto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        Texto
+      </button>
     </div>
-    <button class="btn btn-outline" id="btnSelectImg" style="width:100%;margin-bottom:12px">📷 Selecionar imagem</button>
-    <input type="file" id="imgInput" accept="image/*" style="display:none"/>
+
+    <!-- Preview de mídia -->
+    <div id="postPreviewWrap" class="hidden" style="margin-bottom:12px;position:relative">
+      <img id="postPreview" style="width:100%;border-radius:12px;object-fit:cover;max-height:300px;display:none"/>
+      <video id="postVideoPreview" style="width:100%;border-radius:12px;max-height:300px;display:none" controls></video>
+      <button id="btnRemoveMedia" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px">×</button>
+    </div>
+
+    <!-- Botão de selecionar (muda conforme a tab) -->
+    <button class="btn btn-outline" id="btnSelectMedia" style="width:100%;margin-bottom:12px">📷 Selecionar foto</button>
+    <input type="file" id="mediaInput" accept="image/*" style="display:none"/>
+
+    <!-- Caption / texto -->
     <textarea class="input" id="postCaption" rows="3" placeholder="Escreva uma legenda..." style="margin-bottom:12px"></textarea>
+    <div id="captionCounter" style="font-size:11px;color:var(--text3);text-align:right;margin-top:-8px;margin-bottom:10px;display:none">0 / 500</div>
+
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" id="btnPostStory" style="flex:1">Story (24h)</button>
       <button class="btn btn-primary" id="btnPublish" style="flex:1">Publicar</button>
@@ -132,7 +158,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { uploadFile, uniquePath } from "./js/storage.js";
 import {
-  escapeHTML, sanitizeText, validateCaption, validateComment
+  escapeHTML, sanitizeText, validateCaption, validateComment, validateVideoDuration
 } from "./js/validation.js";
 import { rateLimiter } from "./js/rateLimiter.js";
 
@@ -304,6 +330,9 @@ async function buildPostCard(post) {
   const commentCount = post.comentarios ? Object.keys(post.comentarios).length : 0;
   const liked = post.curtidas && post.curtidas[currentUser.uid];
 
+  // Detecta tipo (retrocompat: sem tipo + imagemUrl = foto)
+  const tipo = post.tipo || (post.videoUrl ? 'video' : (post.imagemUrl ? 'foto' : 'texto'));
+
   const card = document.createElement('div');
   card.className = 'post-card';
   card.dataset.postId = post.id;
@@ -314,10 +343,34 @@ async function buildPostCard(post) {
   const SVG_SHARE = '<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
   const SVG_BOOKMARK = '<svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
   const SVG_MORE = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+  const SVG_VIDEO_BADGE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  const SVG_VOL_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+  const SVG_VOL_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
 
   const avatarHtml = u.fotoPerfil
     ? `<img class="avatar" src="${u.fotoPerfil}" style="width:34px;height:34px;cursor:pointer" onclick="goProfile('${post.uid}')"/>`
     : `<div class="avatar-placeholder" style="width:34px;height:34px;font-size:15px;cursor:pointer" onclick="goProfile('${post.uid}')">${u.emoji}</div>`;
+
+  // Corpo do post conforme o tipo
+  let bodyHtml = '';
+  if (tipo === 'foto') {
+    bodyHtml = `
+      <div class="post-img-wrap">
+        <img class="post-img" src="${post.imagemUrl}" loading="lazy"/>
+        <div class="heart-overlay" id="heart-overlay-${post.id}">❤</div>
+      </div>`;
+  } else if (tipo === 'video') {
+    bodyHtml = `
+      <div class="post-video-wrap">
+        <video class="post-video" id="video-${post.id}" src="${post.videoUrl}" loop muted playsinline preload="metadata"></video>
+        <div class="post-video-badge">${SVG_VIDEO_BADGE}<span>Vídeo</span></div>
+        <button class="post-video-mute" id="mute-${post.id}" aria-label="Som">${SVG_VOL_OFF}</button>
+        <div class="heart-overlay" id="heart-overlay-${post.id}">❤</div>
+      </div>`;
+  } else if (tipo === 'texto') {
+    const text = post.texto || '';
+    bodyHtml = `<div class="post-text-card ${text.length > 140 ? 'long' : ''}">${escapeHTML(text)}</div>`;
+  }
 
   card.innerHTML = `
     <div class="post-header">
@@ -329,11 +382,7 @@ async function buildPostCard(post) {
         ? `<button class="action-btn" style="color:var(--text3)" onclick="deletePost('${post.id}')">${SVG_MORE}</button>`
         : ''}
     </div>
-    ${post.imagemUrl ? `
-      <div class="post-img-wrap">
-        <img class="post-img" src="${post.imagemUrl}" loading="lazy"/>
-        <div class="heart-overlay" id="heart-overlay-${post.id}">❤</div>
-      </div>` : ''}
+    ${bodyHtml}
     <div class="post-actions">
       <button class="action-btn ${liked ? 'liked' : ''}" id="like-${post.id}" aria-label="Curtir">
         ${liked ? SVG_HEART_FILLED : SVG_HEART}
@@ -344,7 +393,7 @@ async function buildPostCard(post) {
       <button class="action-btn" aria-label="Salvar">${SVG_BOOKMARK}</button>
     </div>
     ${likeCount > 0 ? `<div class="post-likes">${likeCount} ${likeCount === 1 ? 'curtida' : 'curtidas'}</div>` : ''}
-    ${post.legenda ? `
+    ${post.legenda && tipo !== 'texto' ? `
       <div class="post-caption">
         <strong onclick="goProfile('${post.uid}')">${u.username}</strong><span>${escapeHTML(post.legenda)}</span>
       </div>` : ''}
@@ -355,31 +404,75 @@ async function buildPostCard(post) {
   // Like button
   card.querySelector(`#like-${post.id}`).onclick = () => toggleLike(post.id);
 
-  // Image click to expand + double-tap pra curtir
-  const img = card.querySelector('.post-img');
-  if (img) {
-    let lastTap = 0;
-    img.addEventListener('click', (e) => {
-      const now = Date.now();
-      if (now - lastTap < 300) {
-        // double-tap: curtir
-        e.preventDefault();
-        if (!liked) toggleLike(post.id);
-        const overlay = document.getElementById(`heart-overlay-${post.id}`);
-        if (overlay) {
-          overlay.classList.remove('pop');
-          void overlay.offsetWidth;
-          overlay.classList.add('pop');
-        }
-        lastTap = 0;
-      } else {
-        lastTap = now;
-        setTimeout(() => { if (lastTap === now) openImgModal(post.imagemUrl); }, 300);
-      }
-    });
+  // Handlers específicos por tipo
+  if (tipo === 'foto') {
+    const img = card.querySelector('.post-img');
+    if (img) attachDoubleTapLike(img, post, liked);
+  } else if (tipo === 'video') {
+    const video = card.querySelector(`#video-${post.id}`);
+    const muteBtn = card.querySelector(`#mute-${post.id}`);
+
+    // Autoplay muted quando entra na viewport
+    if (video && !window._videoObserver) {
+      window._videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const v = entry.target;
+          if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+            v.play().catch(() => {});
+          } else {
+            v.pause();
+          }
+        });
+      }, { threshold: [0, 0.6, 1] });
+    }
+    if (video) window._videoObserver.observe(video);
+
+    // Toggle mute
+    if (muteBtn && video) {
+      muteBtn.onclick = (e) => {
+        e.stopPropagation();
+        video.muted = !video.muted;
+        muteBtn.innerHTML = video.muted ? SVG_VOL_OFF : SVG_VOL_ON;
+      };
+    }
+
+    // Tap no vídeo: pausa/play
+    if (video) {
+      attachDoubleTapLike(video, post, liked, () => {
+        if (video.paused) video.play().catch(() => {});
+        else video.pause();
+      });
+    }
   }
 
   return card;
+}
+
+// Helper: double-tap pra curtir + single-tap ação customizada
+function attachDoubleTapLike(el, post, wasLiked, singleTapAction) {
+  let lastTap = 0;
+  el.addEventListener('click', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      e.preventDefault();
+      if (!wasLiked) toggleLike(post.id);
+      const overlay = document.getElementById(`heart-overlay-${post.id}`);
+      if (overlay) {
+        overlay.classList.remove('pop');
+        void overlay.offsetWidth;
+        overlay.classList.add('pop');
+      }
+      lastTap = 0;
+    } else {
+      lastTap = now;
+      setTimeout(() => {
+        if (lastTap === now) {
+          if (singleTapAction) singleTapAction();
+          else if (post.imagemUrl) openImgModal(post.imagemUrl);
+        }
+      }, 300);
+    }
+  });
 }
 
 function timeAgoFull(ts) {
@@ -562,67 +655,175 @@ document.getElementById('sendComment').onclick = async () => {
 };
 
 // ── NEW POST ──
-document.getElementById('btnNewPost').onclick = () => document.getElementById('newPostModal').classList.remove('hidden');
+let postType = 'foto'; // 'foto' | 'video' | 'texto'
+
+document.getElementById('btnNewPost').onclick = () => {
+  document.getElementById('newPostModal').classList.remove('hidden');
+  setPostType('foto');
+};
 document.getElementById('closeNewPost').onclick = () => document.getElementById('newPostModal').classList.add('hidden');
 
-document.getElementById('btnSelectImg').onclick = () => document.getElementById('imgInput').click();
+function setPostType(type) {
+  postType = type;
+  document.querySelectorAll('.post-type-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.type === type);
+  });
 
-document.getElementById('imgInput').onchange = (e) => {
-  selectedFile = e.target.files[0];
-  if (!selectedFile) return;
+  const selectBtn = document.getElementById('btnSelectMedia');
+  const input = document.getElementById('mediaInput');
+  const caption = document.getElementById('postCaption');
+  const counter = document.getElementById('captionCounter');
+  const storyBtn = document.getElementById('btnPostStory');
+
+  // Reset preview
+  clearMediaPreview();
+
+  if (type === 'foto') {
+    selectBtn.style.display = '';
+    selectBtn.textContent = '📷 Selecionar foto';
+    input.accept = 'image/*';
+    caption.placeholder = 'Escreva uma legenda...';
+    counter.style.display = 'none';
+    storyBtn.style.display = '';
+  } else if (type === 'video') {
+    selectBtn.style.display = '';
+    selectBtn.textContent = '🎬 Selecionar vídeo (até 30s)';
+    input.accept = 'video/mp4,video/webm,video/quicktime';
+    caption.placeholder = 'Escreva uma legenda...';
+    counter.style.display = 'none';
+    storyBtn.style.display = 'none'; // stories são só foto por enquanto
+  } else if (type === 'texto') {
+    selectBtn.style.display = 'none';
+    caption.placeholder = 'No que você está pensando?';
+    counter.style.display = '';
+    updateCaptionCounter();
+    storyBtn.style.display = 'none';
+  }
+}
+
+function clearMediaPreview() {
+  selectedFile = null;
+  document.getElementById('mediaInput').value = '';
+  document.getElementById('postPreview').src = '';
+  document.getElementById('postPreview').style.display = 'none';
+  document.getElementById('postVideoPreview').src = '';
+  document.getElementById('postVideoPreview').style.display = 'none';
+  document.getElementById('postPreviewWrap').classList.add('hidden');
+}
+
+function updateCaptionCounter() {
+  const len = document.getElementById('postCaption').value.length;
+  document.getElementById('captionCounter').textContent = `${len} / 500`;
+  document.getElementById('captionCounter').style.color = len > 500 ? 'var(--accent2)' : 'var(--text3)';
+}
+
+document.getElementById('postCaption').addEventListener('input', updateCaptionCounter);
+
+// Tabs
+document.querySelectorAll('.post-type-tab').forEach(tab => {
+  tab.onclick = () => setPostType(tab.dataset.type);
+});
+
+document.getElementById('btnSelectMedia').onclick = () => document.getElementById('mediaInput').click();
+document.getElementById('btnRemoveMedia').onclick = clearMediaPreview;
+
+document.getElementById('mediaInput').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Detectar tipo
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+
+  if (postType === 'foto' && !isImage) { toast('Selecione uma imagem', 'error'); return; }
+  if (postType === 'video' && !isVideo) { toast('Selecione um vídeo', 'error'); return; }
+
+  // Validar duração do vídeo
+  if (isVideo) {
+    const durErr = await validateVideoDuration(file, 30);
+    if (durErr) { toast(durErr, 'error'); return; }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast('Vídeo muito grande. Máximo: 20MB', 'error');
+      return;
+    }
+  }
+
+  selectedFile = file;
   const reader = new FileReader();
   reader.onload = ev => {
-    document.getElementById('postPreview').src = ev.target.result;
-    document.getElementById('postPreviewWrap').classList.remove('hidden');
+    const wrap = document.getElementById('postPreviewWrap');
+    wrap.classList.remove('hidden');
+    if (isVideo) {
+      const vid = document.getElementById('postVideoPreview');
+      vid.src = ev.target.result;
+      vid.style.display = '';
+      document.getElementById('postPreview').style.display = 'none';
+    } else {
+      const img = document.getElementById('postPreview');
+      img.src = ev.target.result;
+      img.style.display = '';
+      document.getElementById('postVideoPreview').style.display = 'none';
+    }
   };
-  reader.readAsDataURL(selectedFile);
+  reader.readAsDataURL(file);
 };
 
 async function publish(isStory = false) {
-  // Validação de arquivo
-  if (!selectedFile) return toast('Selecione uma imagem', 'error');
-
   const caption = document.getElementById('postCaption').value.trim();
 
-  // Validar caption se fornecido
-  if (caption) {
-    const captionError = validateCaption(caption);
-    if (captionError) return toast(captionError, 'error');
+  // Validações por tipo
+  if (postType === 'texto') {
+    if (!caption) return toast('Escreva algo', 'error');
+    if (caption.length > 500) return toast('Texto muito longo (máx 500)', 'error');
+  } else {
+    if (!selectedFile) return toast('Selecione uma mídia', 'error');
+    if (caption) {
+      const captionError = validateCaption(caption);
+      if (captionError) return toast(captionError, 'error');
+    }
   }
 
-  // Rate limiting (desabilitado temporariamente para teste)
-  // const action = isStory ? 'story' : 'post';
-  // const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, action);
-  // if (!rateLimitCheck.allowed) {
-  //   return toast(rateLimitCheck.message, 'error');
-  // }
-
-  document.getElementById('uploadProgress').classList.remove('hidden');
   document.getElementById('btnPublish').disabled = true;
   document.getElementById('btnPostStory').disabled = true;
 
   try {
-    // Validar arquivo (tipo, tamanho)
-    const fileError = uploadFile.validateFile?.(selectedFile) || null;
-    if (fileError) return toast(fileError, 'error');
+    const safeCaption = caption ? sanitizeText(caption) : '';
 
-    const folder = isStory ? 'stories' : 'posts';
+    // POST DE TEXTO: sem upload
+    if (postType === 'texto') {
+      await push(ref(db, 'posts'), {
+        uid: currentUser.uid,
+        tipo: 'texto',
+        texto: safeCaption,
+        timestamp: Date.now()
+      });
+      toast('Post publicado! 🎉', 'success');
+      selectedFile = null;
+      document.getElementById('postCaption').value = '';
+      document.getElementById('newPostModal').classList.add('hidden');
+      return;
+    }
+
+    // POST DE FOTO ou VÍDEO: upload + gravar
+    const isVideo = selectedFile.type.startsWith('video/');
+    document.getElementById('uploadProgress').classList.remove('hidden');
+
+    const folder = isStory ? 'stories' : (isVideo ? 'videos' : 'posts');
     const path = uniquePath(`${folder}/${currentUser.uid}`, selectedFile.name);
 
-    // Upload com validação
     const url = await uploadFile(selectedFile, path,
       {
-        maxSize: 5 * 1024 * 1024, // 5MB
-        allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        maxSize: isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024,
+        allowedTypes: isVideo
+          ? ['video/mp4', 'video/webm', 'video/quicktime']
+          : ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       },
       (pct) => {
         document.getElementById('progressBar').style.width = pct + '%';
         document.getElementById('progressText').textContent = `Enviando... ${pct}%`;
       }
     );
-
-    // Sanitizar caption antes de salvar
-    const safeCaption = caption ? sanitizeText(caption) : '';
 
     if (isStory) {
       await push(ref(db, 'stories'), {
@@ -631,9 +832,19 @@ async function publish(isStory = false) {
         timestamp: Date.now()
       });
       toast('Story publicado! ✨', 'success');
+    } else if (isVideo) {
+      await push(ref(db, 'posts'), {
+        uid: currentUser.uid,
+        tipo: 'video',
+        videoUrl: url,
+        legenda: safeCaption,
+        timestamp: Date.now()
+      });
+      toast('Vídeo publicado! 🎬', 'success');
     } else {
       await push(ref(db, 'posts'), {
         uid: currentUser.uid,
+        tipo: 'foto',
         imagemUrl: url,
         legenda: safeCaption,
         timestamp: Date.now()
@@ -641,15 +852,14 @@ async function publish(isStory = false) {
       toast('Post publicado! 🎉', 'success');
     }
 
-    // Limpar formulário
-    selectedFile = null;
+    // Limpar
+    clearMediaPreview();
     document.getElementById('postCaption').value = '';
-    document.getElementById('postPreviewWrap').classList.add('hidden');
     document.getElementById('newPostModal').classList.add('hidden');
 
   } catch (e) {
     console.error('Erro no upload:', e);
-    toast('Erro no upload: ' + (e.message || 'Erro desconhecido'), 'error');
+    toast('Erro: ' + (e.message || 'desconhecido'), 'error');
   } finally {
     document.getElementById('uploadProgress').classList.add('hidden');
     document.getElementById('btnPublish').disabled = false;

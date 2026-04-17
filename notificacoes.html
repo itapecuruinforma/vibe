@@ -42,22 +42,10 @@
 </nav>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getDatabase, ref, get, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
-  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
-  projectId: "controle-de-gasto-fc4e0",
-  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
-  messagingSenderId: "1035761573543",
-  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
-  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import { auth, db } from "./js/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { ref, get, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { escapeHTML } from "./js/validation.js";
 
 let currentUser = null;
 const userCache = {};
@@ -107,30 +95,79 @@ function loadNotifications() {
       let icon = '';
       let action = () => {};
 
+      let text = '';
+      let icon = '';
+      const safeName = escapeHTML(u.username || 'usuário');
+
       if (n.tipo === 'curtida') {
         icon = '❤️';
-        text = `<strong>${u.username}</strong> curtiu seu post`;
+        text = `${safeName} curtiu seu post`;
         action = () => window.location.href = 'feed.html';
       } else if (n.tipo === 'comentario') {
         icon = '💬';
-        text = `<strong>${u.username}</strong> comentou no seu post`;
+        text = `${safeName} comentou no seu post`;
         action = () => window.location.href = 'feed.html';
       } else if (n.tipo === 'seguiu') {
         icon = '👤';
-        text = `<strong>${u.username}</strong> começou a te seguir`;
+        text = `${safeName} começou a te seguir`;
         action = () => window.location.href = `perfil.html?uid=${n.de}`;
       }
 
-      div.innerHTML = `
-        <div style="font-size:24px;flex-shrink:0">${icon}</div>
-        <div style="width:36px;height:36px;flex-shrink:0">
-          ${u.fotoPerfil
-            ? `<img class="avatar" src="${u.fotoPerfil}" style="width:36px;height:36px"/>`
-            : `<div class="avatar-placeholder" style="width:36px;height:36px;font-size:15px;border:none">${u.emoji}</div>`}
-        </div>
-        <div class="notif-text">${text}<div class="notif-time">${timeAgo(n.timestamp)}</div></div>
-        ${!n.lida ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>' : ''}
-      `;
+      // Criar elementos com textContent (seguro contra XSS)
+      const iconDiv = document.createElement('div');
+      iconDiv.style.fontSize = '24px';
+      iconDiv.style.flexShrink = '0';
+      iconDiv.textContent = icon;
+
+      const avatarDiv = document.createElement('div');
+      avatarDiv.style.width = '36px';
+      avatarDiv.style.height = '36px';
+      avatarDiv.style.flexShrink = '0';
+
+      if (u.fotoPerfil) {
+        const img = document.createElement('img');
+        img.className = 'avatar';
+        img.src = u.fotoPerfil;
+        img.style.width = '36px';
+        img.style.height = '36px';
+        avatarDiv.appendChild(img);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'avatar-placeholder';
+        placeholder.style.width = '36px';
+        placeholder.style.height = '36px';
+        placeholder.style.fontSize = '15px';
+        placeholder.style.border = 'none';
+        placeholder.textContent = u.emoji || '👤';
+        avatarDiv.appendChild(placeholder);
+      }
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'notif-text';
+
+      const textSpan = document.createElement('span');
+      textSpan.textContent = text;
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'notif-time';
+      timeDiv.textContent = timeAgo(n.timestamp);
+
+      textDiv.appendChild(textSpan);
+      textDiv.appendChild(timeDiv);
+
+      div.appendChild(iconDiv);
+      div.appendChild(avatarDiv);
+      div.appendChild(textDiv);
+
+      if (!n.lida) {
+        const badge = document.createElement('div');
+        badge.style.width = '8px';
+        badge.style.height = '8px';
+        badge.style.borderRadius = '50%';
+        badge.style.background = 'var(--accent)';
+        badge.style.flexShrink = '0';
+        div.appendChild(badge);
+      }
 
       div.onclick = async () => {
         await update(ref(db, `notificacoes/${currentUser.uid}/${n.id}`), { lida: true });

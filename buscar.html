@@ -45,22 +45,10 @@
 </nav>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
-  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
-  projectId: "controle-de-gasto-fc4e0",
-  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
-  messagingSenderId: "1035761573543",
-  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
-  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import { auth, db } from "./js/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { ref, get } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { sanitizeText } from "./js/validation.js";
 
 let currentUser = null;
 let allUsers = {};
@@ -77,15 +65,48 @@ onAuthStateChanged(auth, async user => {
 function userCard(uid, u) {
   const div = document.createElement('div');
   div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer';
-  div.innerHTML = `
-    ${u.fotoPerfil
-      ? `<img class="avatar" src="${u.fotoPerfil}" style="width:44px;height:44px"/>`
-      : `<div class="avatar-placeholder" style="width:44px;height:44px;font-size:20px;border:none">${u.emoji || '👤'}</div>`}
-    <div style="flex:1">
-      <div style="font-weight:600;font-size:15px">${u.emoji || ''} ${u.username}</div>
-      ${u.bio ? `<div style="font-size:13px;color:var(--text2)">${u.bio.substring(0, 50)}</div>` : ''}
-    </div>`;
+
+  // Avatar
+  const avatarDiv = document.createElement('div');
+  if (u.fotoPerfil) {
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.src = u.fotoPerfil;
+    img.style.width = '44px';
+    img.style.height = '44px';
+    avatarDiv.appendChild(img);
+  } else {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'avatar-placeholder';
+    placeholder.style.width = '44px';
+    placeholder.style.height = '44px';
+    placeholder.style.fontSize = '20px';
+    placeholder.style.border = 'none';
+    placeholder.textContent = u.emoji || '👤';
+    avatarDiv.appendChild(placeholder);
+  }
+
+  // Info
+  const infoDiv = document.createElement('div');
+  infoDiv.style.flex = '1';
+
+  const nameDiv = document.createElement('div');
+  nameDiv.style.cssText = 'font-weight:600;font-size:15px';
+  nameDiv.textContent = (u.emoji || '') + ' ' + (u.username || 'usuário');
+
+  infoDiv.appendChild(nameDiv);
+
+  if (u.bio) {
+    const bioDiv = document.createElement('div');
+    bioDiv.style.cssText = 'font-size:13px;color:var(--text2)';
+    bioDiv.textContent = sanitizeText(u.bio).substring(0, 50);
+    infoDiv.appendChild(bioDiv);
+  }
+
+  div.appendChild(avatarDiv);
+  div.appendChild(infoDiv);
   div.onclick = () => window.location.href = `perfil.html?uid=${uid}`;
+
   return div;
 }
 

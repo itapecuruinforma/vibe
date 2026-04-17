@@ -37,28 +37,17 @@
 <div id="toast-container"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { auth, db } from "./js/config.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, signOut, onAuthStateChanged, fetchSignInMethodsForEmail
+  sendEmailVerification, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import {
-  getDatabase, ref, set, get, onValue
+  getDatabase, ref, set, get
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
-  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
-  projectId: "controle-de-gasto-fc4e0",
-  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
-  messagingSenderId: "1035761573543",
-  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
-  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import {
+  validateUsername, validateEmail, validatePassword, validateEmoji
+} from "./js/validation.js";
 
 function toast(msg, type = '') {
   const el = document.createElement('div');
@@ -91,7 +80,17 @@ document.getElementById('toLogin').onclick = () => {
 document.getElementById('btnLogin').onclick = async () => {
   const email = document.getElementById('emailLogin').value.trim();
   const senha = document.getElementById('senhaLogin').value;
-  if (!email || !senha) return toast('Preencha todos os campos', 'error');
+
+  if (!email || !senha) {
+    return toast('Preencha todos os campos', 'error');
+  }
+
+  const emailError = validateEmail(email);
+  if (emailError) return toast(emailError, 'error');
+
+  const senhaError = validatePassword(senha);
+  if (senhaError) return toast(senhaError, 'error');
+
   try {
     const cred = await signInWithEmailAndPassword(auth, email, senha);
     if (!cred.user.emailVerified) {
@@ -111,23 +110,40 @@ document.getElementById('btnRegister').onclick = async () => {
   const email = document.getElementById('emailReg').value.trim();
   const senha = document.getElementById('senhaReg').value;
 
-  if (!username || !email || !senha) return toast('Preencha todos os campos', 'error');
-  if (username.length < 3) return toast('Username muito curto', 'error');
-  if (senha.length < 6) return toast('Senha precisa ter 6+ caracteres', 'error');
-  if (!/^[a-z0-9_]+$/.test(username)) return toast('Username só pode ter letras, números e _', 'error');
+  // Validar username
+  const usernameError = validateUsername(username);
+  if (usernameError) return toast(usernameError, 'error');
 
-  // Checar username único
-  const snap = await get(ref(db, 'usernames/' + username));
-  if (snap.exists()) return toast('Username já em uso', 'error');
+  // Validar emoji
+  const emojiError = validateEmoji(emoji);
+  if (emojiError) return toast(emojiError, 'error');
+
+  // Validar email
+  const emailError = validateEmail(email);
+  if (emailError) return toast(emailError, 'error');
+
+  // Validar senha
+  const senhaError = validatePassword(senha);
+  if (senhaError) return toast(senhaError, 'error');
 
   try {
+    // Checar username único
+    const snap = await get(ref(db, 'usernames/' + username));
+    if (snap.exists()) {
+      return toast('Username já em uso', 'error');
+    }
+
     const cred = await createUserWithEmailAndPassword(auth, email, senha);
     const uid = cred.user.uid;
 
     await set(ref(db, 'usuarios/' + uid), {
-      username, emoji, bio: '', fotoPerfil: '',
+      username,
+      emoji,
+      bio: '',
+      fotoPerfil: '',
       criadoEm: Date.now()
     });
+
     await set(ref(db, 'usernames/' + username), uid);
     await sendEmailVerification(cred.user);
     await signOut(auth);

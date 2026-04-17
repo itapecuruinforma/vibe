@@ -171,25 +171,16 @@
 <div id="toast-container"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { auth, db } from "./js/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import {
-  getDatabase, ref, get, push, set, onValue, remove, update
+  ref, get, push, set, onValue, remove, update
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { uploadFile, uniquePath } from "./js/storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
-  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
-  projectId: "controle-de-gasto-fc4e0",
-  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
-  messagingSenderId: "1035761573543",
-  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
-  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import {
+  validateMessage, validateFileUpload, sanitizeText
+} from "./js/validation.js";
+import { rateLimiter } from "./js/rateLimiter.js";
 
 const params = new URLSearchParams(location.search);
 const tipo = params.get('tipo');
@@ -313,13 +304,38 @@ document.getElementById('msgInput').onkeydown = (e) => { if (e.key === 'Enter') 
 
 async function sendText() {
   const txt = document.getElementById('msgInput').value.trim();
+
   if (!txt) return;
-  await push(ref(db, `conversas/${conversaId}/mensagens`), {
-    uid: currentUser.uid,
-    texto: txt,
-    timestamp: Date.now()
-  });
-  document.getElementById('msgInput').value = '';
+
+  // Validar mensagem
+  const msgError = validateMessage(txt);
+  if (msgError) {
+    toast(msgError, 'error');
+    return;
+  }
+
+  // Rate limiting
+  const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, 'message');
+  if (!rateLimitCheck.allowed) {
+    toast(rateLimitCheck.message, 'error');
+    return;
+  }
+
+  try {
+    // Sanitizar antes de salvar
+    const safeText = sanitizeText(txt);
+
+    await push(ref(db, `conversas/${conversaId}/mensagens`), {
+      uid: currentUser.uid,
+      texto: safeText,
+      timestamp: Date.now()
+    });
+
+    document.getElementById('msgInput').value = '';
+    toast('Mensagem enviada!', 'success');
+  } catch (e) {
+    toast('Erro ao enviar: ' + e.message, 'error');
+  }
 }
 
 // Audio
@@ -364,10 +380,27 @@ document.getElementById('btnSendImg').onclick = () => document.getElementById('i
 document.getElementById('imgFileInput').onchange = (e) => {
   selectedImgFile = e.target.files[0];
   if (!selectedImgFile) return;
+
+  // Validar arquivo de imagem
+  const fileError = validateFileUpload(selectedImgFile, {
+    maxSize: 5 * 1024 * 1024,
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  });
+
+  if (fileError) {
+    toast(fileError, 'error');
+    selectedImgFile = null;
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = ev => {
     document.getElementById('imgPreviewSrc').src = ev.target.result;
     document.getElementById('imgPreviewModal').classList.remove('hidden');
+  };
+  reader.onerror = () => {
+    toast('Erro ao ler arquivo', 'error');
+    selectedImgFile = null;
   };
   reader.readAsDataURL(selectedImgFile);
 };
@@ -375,15 +408,35 @@ document.getElementById('imgFileInput').onchange = (e) => {
 document.getElementById('btnCancelImg').onclick = () => document.getElementById('imgPreviewModal').classList.add('hidden');
 document.getElementById('btnConfirmImg').onclick = async () => {
   if (!selectedImgFile) return;
+
+  // Rate limiting
+  const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, 'upload');
+  if (!rateLimitCheck.allowed) {
+    toast(rateLimitCheck.message, 'error');
+    return;
+  }
+
   document.getElementById('imgPreviewModal').classList.add('hidden');
   toast('Enviando imagem...');
+
   try {
     const path = uniquePath(`chat_imgs/${conversaId}`, selectedImgFile.name);
-    const url = await uploadFile(selectedImgFile, path);
-    await push(ref(db, `conversas/${conversaId}/mensagens`), {
-      uid: currentUser.uid, imagemUrl: url, timestamp: Date.now()
+    const url = await uploadFile(selectedImgFile, path, {
+      maxSize: 5 * 1024 * 1024,
+      allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     });
-  } catch (e) { toast('Erro ao enviar imagem', 'error'); }
+
+    await push(ref(db, `conversas/${conversaId}/mensagens`), {
+      uid: currentUser.uid,
+      imagemUrl: url,
+      timestamp: Date.now()
+    });
+
+    selectedImgFile = null;
+    toast('Imagem enviada!', 'success');
+  } catch (e) {
+    toast('Erro ao enviar imagem: ' + e.message, 'error');
+  }
 };
 </script>
 </body>

@@ -1,0 +1,81 @@
+{
+  "rules": {
+    "usuarios": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth.uid == $uid",
+        "seguidores": {
+          ".read": "auth != null",
+          ".write": "auth.uid != null"
+        },
+        "seguindo": {
+          ".read": "auth != null",
+          ".write": "auth.uid != null"
+        }
+      }
+    },
+    "usernames": {
+      ".read": "auth != null",
+      "$username": {
+        ".write": "root.child('usuarios').child(auth.uid).exists()"
+      }
+    },
+    "posts": {
+      ".read": "auth != null",
+      ".indexOn": ["timestamp", "uid"],
+      "$postId": {
+        ".write": "root.child('posts').child($postId).child('uid').val() == auth.uid || !root.child('posts').child($postId).exists()",
+        "curtidas": {
+          "$uid": {
+            ".write": "auth.uid == $uid"
+          }
+        },
+        "comentarios": {
+          ".read": "auth != null",
+          ".write": "auth.uid != null"
+        }
+      }
+    },
+    "stories": {
+      ".read": "auth != null",
+      ".indexOn": ["timestamp", "uid"],
+      "$storyId": {
+        ".write": "root.child('stories').child($storyId).child('uid').val() == auth.uid || !root.child('stories').child($storyId).exists()",
+        "visto": {
+          "$uid": {
+            ".write": "auth.uid == $uid"
+          }
+        }
+      }
+    },
+    "conversas": {
+      ".read": "auth != null",
+      "$conversaId": {
+        ".read": "root.child('conversas').child($conversaId).child('participantes').child(auth.uid).exists()",
+        ".write": "root.child('conversas').child($conversaId).child('participantes').child(auth.uid).exists() || !root.child('conversas').child($conversaId).exists()",
+        "participantes": {
+          ".write": "root.child('conversas').child($conversaId).child('participantes').child(auth.uid).exists()"
+        },
+        "mensagens": {
+          ".read": "root.child('conversas').child($conversaId).child('participantes').child(auth.uid).exists()",
+          ".write": "auth.uid != null && root.child('conversas').child($conversaId).child('participantes').child(auth.uid).exists()"
+        }
+      }
+    },
+    "notificacoes": {
+      "$uid": {
+        ".read": "auth.uid == $uid",
+        ".write": "auth.uid != null",
+        "$notifId": {
+          ".write": "auth.uid == $uid"
+        }
+      }
+    },
+    "chat_solicitacoes": {
+      ".read": "auth != null",
+      ".write": "auth.uid != null"
+    },
+    ".read": false,
+    ".write": false
+  }
+}

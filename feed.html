@@ -127,25 +127,16 @@
 <div id="toast-container"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { auth, db } from "./js/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import {
-  getDatabase, ref, onValue, push, set, get, update, remove, query, orderByChild, limitToLast
+  ref, onValue, push, set, get, remove, query, orderByChild, limitToLast
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { uploadFile, uniquePath } from "./js/storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
-  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
-  projectId: "controle-de-gasto-fc4e0",
-  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
-  messagingSenderId: "1035761573543",
-  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
-  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import {
+  escapeHTML, sanitizeText, validateCaption, validateComment
+} from "./js/validation.js";
+import { rateLimiter } from "./js/rateLimiter.js";
 
 let currentUser = null;
 let myProfile = null;
@@ -341,7 +332,7 @@ async function buildPostCard(post) {
     </div>
     ${post.legenda ? `
       <div class="post-caption">
-        <strong onclick="goProfile('${post.uid}')">${u.username}</strong> ${post.legenda}
+        <strong onclick="goProfile('${post.uid}')">${u.username}</strong> <span>${escapeHTML(post.legenda)}</span>
       </div>` : ''}
     ${commentCount > 0 ? `<div class="post-comments-preview" onclick="openComments('${post.id}')">Ver todos os ${commentCount} comentários</div>` : ''}
   `;
@@ -419,15 +410,49 @@ function loadComments(postId) {
       const u = await getUser(c.uid);
       const div = document.createElement('div');
       div.className = 'comment-item';
-      div.innerHTML = `
-        ${u.fotoPerfil
-          ? `<img class="avatar" src="${u.fotoPerfil}" style="width:32px;height:32px"/>`
-          : `<div class="avatar-placeholder" style="width:32px;height:32px;font-size:14px;border:none">${u.emoji}</div>`}
-        <div class="comment-body">
-          <span class="comment-name">${u.username}</span>
-          <div class="comment-text">${c.texto}</div>
-          <div class="comment-time">${timeAgo(c.timestamp)}</div>
-        </div>`;
+
+      // Avatar
+      const avatarDiv = document.createElement('div');
+      if (u.fotoPerfil) {
+        const img = document.createElement('img');
+        img.className = 'avatar';
+        img.src = u.fotoPerfil;
+        img.style.width = '32px';
+        img.style.height = '32px';
+        avatarDiv.appendChild(img);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'avatar-placeholder';
+        placeholder.style.width = '32px';
+        placeholder.style.height = '32px';
+        placeholder.style.fontSize = '14px';
+        placeholder.style.border = 'none';
+        placeholder.textContent = u.emoji;
+        avatarDiv.appendChild(placeholder);
+      }
+
+      // Body
+      const body = document.createElement('div');
+      body.className = 'comment-body';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'comment-name';
+      nameSpan.textContent = u.username;
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'comment-text';
+      textDiv.textContent = sanitizeText(c.texto);
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'comment-time';
+      timeDiv.textContent = timeAgo(c.timestamp);
+
+      body.appendChild(nameSpan);
+      body.appendChild(textDiv);
+      body.appendChild(timeDiv);
+
+      div.appendChild(avatarDiv);
+      div.appendChild(body);
       list.appendChild(div);
     }
     list.scrollTop = list.scrollHeight;
@@ -438,25 +463,48 @@ document.getElementById('closeComments').onclick = () => document.getElementById
 
 document.getElementById('sendComment').onclick = async () => {
   const txt = document.getElementById('commentInput').value.trim();
-  if (!txt || !currentPostId) return;
-  await push(ref(db, `posts/${currentPostId}/comentarios`), {
-    uid: currentUser.uid,
-    texto: txt,
-    timestamp: Date.now()
-  });
-  // Notify
-  const postSnap = await get(ref(db, 'posts/' + currentPostId));
-  const post = postSnap.val();
-  if (post && post.uid !== currentUser.uid) {
-    push(ref(db, `notificacoes/${post.uid}`), {
-      tipo: 'comentario',
-      de: currentUser.uid,
-      postId: currentPostId,
-      timestamp: Date.now(),
-      lida: false
-    });
+
+  // Validação básica
+  if (!txt || !currentPostId) return toast('Comentário não pode estar vazio', 'error');
+
+  // Validar comentário
+  const error = validateComment(txt);
+  if (error) return toast(error, 'error');
+
+  // Rate limiting
+  const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, 'comment');
+  if (!rateLimitCheck.allowed) {
+    return toast(rateLimitCheck.message, 'error');
   }
-  document.getElementById('commentInput').value = '';
+
+  try {
+    // Sanitizar antes de salvar
+    const safeText = sanitizeText(txt);
+
+    await push(ref(db, `posts/${currentPostId}/comentarios`), {
+      uid: currentUser.uid,
+      texto: safeText,
+      timestamp: Date.now()
+    });
+
+    // Notificar autor do post
+    const postSnap = await get(ref(db, 'posts/' + currentPostId));
+    const post = postSnap.val();
+    if (post && post.uid !== currentUser.uid) {
+      push(ref(db, `notificacoes/${post.uid}`), {
+        tipo: 'comentario',
+        de: currentUser.uid,
+        postId: currentPostId,
+        timestamp: Date.now(),
+        lida: false
+      });
+    }
+
+    document.getElementById('commentInput').value = '';
+    toast('Comentário adicionado!', 'success');
+  } catch (e) {
+    toast('Erro ao comentar: ' + e.message, 'error');
+  }
 };
 
 // ── NEW POST ──
@@ -477,44 +525,82 @@ document.getElementById('imgInput').onchange = (e) => {
 };
 
 async function publish(isStory = false) {
+  // Validação de arquivo
   if (!selectedFile) return toast('Selecione uma imagem', 'error');
+
   const caption = document.getElementById('postCaption').value.trim();
+
+  // Validar caption se fornecido
+  if (caption) {
+    const captionError = validateCaption(caption);
+    if (captionError) return toast(captionError, 'error');
+  }
+
+  // Rate limiting
+  const action = isStory ? 'story' : 'post';
+  const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, action);
+  if (!rateLimitCheck.allowed) {
+    return toast(rateLimitCheck.message, 'error');
+  }
 
   document.getElementById('uploadProgress').classList.remove('hidden');
   document.getElementById('btnPublish').disabled = true;
   document.getElementById('btnPostStory').disabled = true;
 
   try {
+    // Validar arquivo (tipo, tamanho)
+    const fileError = uploadFile.validateFile?.(selectedFile) || null;
+    if (fileError) return toast(fileError, 'error');
+
     const folder = isStory ? 'stories' : 'posts';
     const path = uniquePath(`${folder}/${currentUser.uid}`, selectedFile.name);
 
-    const url = await uploadFile(selectedFile, path, (pct) => {
-      document.getElementById('progressBar').style.width = pct + '%';
-      document.getElementById('progressText').textContent = `Enviando... ${pct}%`;
-    });
+    // Upload com validação
+    const url = await uploadFile(selectedFile, path,
+      {
+        maxSize: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      },
+      (pct) => {
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressText').textContent = `Enviando... ${pct}%`;
+      }
+    );
+
+    // Sanitizar caption antes de salvar
+    const safeCaption = caption ? sanitizeText(caption) : '';
 
     if (isStory) {
       await push(ref(db, 'stories'), {
-        uid: currentUser.uid, imagemUrl: url, timestamp: Date.now()
+        uid: currentUser.uid,
+        imagemUrl: url,
+        timestamp: Date.now()
       });
       toast('Story publicado! ✨', 'success');
     } else {
       await push(ref(db, 'posts'), {
-        uid: currentUser.uid, imagemUrl: url, legenda: caption, timestamp: Date.now()
+        uid: currentUser.uid,
+        imagemUrl: url,
+        legenda: safeCaption,
+        timestamp: Date.now()
       });
       toast('Post publicado! 🎉', 'success');
     }
-  } catch (e) {
-    toast('Erro no upload: ' + e.message, 'error');
-  }
 
-  selectedFile = null;
-  document.getElementById('postCaption').value = '';
-  document.getElementById('postPreviewWrap').classList.add('hidden');
-  document.getElementById('uploadProgress').classList.add('hidden');
-  document.getElementById('btnPublish').disabled = false;
-  document.getElementById('btnPostStory').disabled = false;
-  document.getElementById('newPostModal').classList.add('hidden');
+    // Limpar formulário
+    selectedFile = null;
+    document.getElementById('postCaption').value = '';
+    document.getElementById('postPreviewWrap').classList.add('hidden');
+    document.getElementById('newPostModal').classList.add('hidden');
+
+  } catch (e) {
+    console.error('Erro no upload:', e);
+    toast('Erro no upload: ' + (e.message || 'Erro desconhecido'), 'error');
+  } finally {
+    document.getElementById('uploadProgress').classList.add('hidden');
+    document.getElementById('btnPublish').disabled = false;
+    document.getElementById('btnPostStory').disabled = false;
+  }
 }
 
 document.getElementById('btnPublish').onclick = () => publish(false);

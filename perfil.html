@@ -94,25 +94,16 @@
 <div id="toast-container"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { auth, db } from "./js/config.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import {
-  getDatabase, ref, get, set, remove, onValue, query, orderByChild
+  ref, get, set, remove, onValue, query, orderByChild
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import { uploadFile, uniquePath } from "./js/storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDUWwDL8FOiHl_MMssGwkimoI-i-7C7Rrg",
-  authDomain: "controle-de-gasto-fc4e0.firebaseapp.com",
-  projectId: "controle-de-gasto-fc4e0",
-  storageBucket: "controle-de-gasto-fc4e0.appspot.com",
-  messagingSenderId: "1035761573543",
-  appId: "1:1035761573543:web:1af30d370cd4815bd14582",
-  databaseURL: "https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import {
+  validateBio, validateEmoji, validateFileUpload, sanitizeText
+} from "./js/validation.js";
+import { rateLimiter } from "./js/rateLimiter.js";
 
 const params = new URLSearchParams(location.search);
 let profileUid = params.get('uid');
@@ -308,22 +299,77 @@ let newPhotoFile = null;
 document.getElementById('photoInput').onchange = (e) => {
   newPhotoFile = e.target.files[0];
   if (!newPhotoFile) return;
+
+  // Validar arquivo de foto
+  const fileError = validateFileUpload(newPhotoFile, {
+    maxSize: 5 * 1024 * 1024, // 5MB
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  });
+
+  if (fileError) {
+    toast(fileError, 'error');
+    newPhotoFile = null;
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = ev => {
-    document.getElementById('editAvatarPreview').innerHTML = `<img src="${ev.target.result}" style="width:80px;height:80px;border-radius:50%;object-fit:cover"/>`;
+    const img = document.createElement('img');
+    img.src = ev.target.result;
+    img.style.width = '80px';
+    img.style.height = '80px';
+    img.style.borderRadius = '50%';
+    img.style.objectFit = 'cover';
+
+    const preview = document.getElementById('editAvatarPreview');
+    preview.innerHTML = '';
+    preview.appendChild(img);
+  };
+  reader.onerror = () => {
+    toast('Erro ao ler arquivo', 'error');
+    newPhotoFile = null;
   };
   reader.readAsDataURL(newPhotoFile);
 };
 
 document.getElementById('btnSaveEdit').onclick = async () => {
-  const emoji = document.getElementById('editEmoji').value.trim();
+  let emoji = document.getElementById('editEmoji').value.trim();
   const bio = document.getElementById('editBio').value.trim();
+
+  // Se emoji não foi alterado, obter o atual
+  if (!emoji) {
+    const current = (await get(ref(db, 'usuarios/' + currentUser.uid))).val() || {};
+    emoji = current.emoji || '👤';
+  }
+
+  // Validar emoji
+  const emojiError = validateEmoji(emoji);
+  if (emojiError) return toast(emojiError, 'error');
+
+  // Validar bio
+  const bioError = validateBio(bio);
+  if (bioError) return toast(bioError, 'error');
+
+  // Rate limiting para edição de bio
+  const rateLimitCheck = rateLimiter.checkLimit(currentUser.uid, 'bio');
+  if (!rateLimitCheck.allowed) {
+    return toast(rateLimitCheck.message, 'error');
+  }
   let fotoPerfil = null;
 
   if (newPhotoFile) {
+    // Rate limiting para mudança de foto
+    const photoLimitCheck = rateLimiter.checkLimit(currentUser.uid, 'pfp');
+    if (!photoLimitCheck.allowed) {
+      return toast(photoLimitCheck.message, 'error');
+    }
+
     try {
       const path = uniquePath(`perfis/${currentUser.uid}`, newPhotoFile.name);
-      fotoPerfil = await uploadFile(newPhotoFile, path);
+      fotoPerfil = await uploadFile(newPhotoFile, path, {
+        maxSize: 5 * 1024 * 1024,
+        allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      });
     } catch (e) {
       return toast('Erro ao enviar foto: ' + e.message, 'error');
     }

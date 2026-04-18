@@ -219,12 +219,12 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   const snap = await get(ref(db, 'usuarios/' + user.uid));
   myProfile = snap.val() || {};
-  // Escuta lista de bloqueados em tempo real (atualiza cache do moderation.js)
-  watchBlockedUsers(currentUser.uid, () => loadFeed());
   document.getElementById('app').style.display = '';
   loadStories();
-  loadFeed();
   loadNotifBadge();
+  // watchBlockedUsers já dispara o callback imediatamente ao carregar,
+  // o que chama loadFeed() uma única vez. Ao bloquear/desbloquear recria o listener.
+  watchBlockedUsers(currentUser.uid, () => loadFeed());
 });
 
 // ── STORIES ──
@@ -380,10 +380,17 @@ document.getElementById('storyPrev').onclick = () => { storyIndex = Math.max(0, 
 document.getElementById('storyNext').onclick = () => { storyIndex++; showStory(storyIndex); };
 
 // ── FEED ──
+let feedUnsubscribe = null;
+
 function loadFeed() {
+  // Cancela listener anterior para não acumular (cada bloquear/desbloquear recriaria)
+  if (feedUnsubscribe) { feedUnsubscribe(); feedUnsubscribe = null; }
+
   const container = document.getElementById('feedContainer');
+  container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>';
+
   const postsRef = query(ref(db, 'posts'), orderByChild('timestamp'), limitToLast(PAGE_SIZE));
-  onValue(postsRef, async snap => {
+  feedUnsubscribe = onValue(postsRef, async snap => {
     container.innerHTML = '';
     const posts = [];
     snap.forEach(child => { posts.unshift({ id: child.key, ...child.val() }); });

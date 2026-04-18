@@ -1,0 +1,27 @@
+name: 🤖 Bot — Motivação
+
+on:
+  schedule:
+    # Todo dia às 13:30 UTC = 10:30 horário de Brasília (30 min após enigmas)
+    - cron: '30 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rodar bot de motivação
+        run: node bot/motivacao.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
+          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}

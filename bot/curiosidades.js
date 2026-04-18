@@ -232,31 +232,20 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  // Checa se o perfil já existe
-  const checkRes = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`);
-  const data = await checkRes.json();
+  const USERNAME = 'lucasvieira';
+  const NOME     = 'Lucas Vieira';
+  const BIO      = 'Curioso por natureza 🌍 Aprendendo todo dia';
+  const EMOJI    = '🙂';
 
-  if (data && data.username) {
-    console.log('Perfil já existe:', data.username);
-    return;
-  }
-
-  console.log('Criando perfil do bot...');
-
-  // Cria o perfil
+  // Sempre atualiza nome, bio e emoji (caso tenha mudado)
   await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      username: 'vibebot',
-      nome: 'Vibe Curiosidades',
-      bio: 'Uma curiosidade nova todo dia! 💡 Saber é Vibrar ⚡',
-      emoji: '💡',
-    }),
+    body: JSON.stringify({ username: USERNAME, nome: NOME, bio: BIO, emoji: EMOJI }),
   });
 
   // Registra o username (só funciona se ainda não existe)
-  await fetch(`${DB_URL}/usernames/vibebot.json?auth=${token}`, {
+  await fetch(`${DB_URL}/usernames/${USERNAME}.json?auth=${token}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(uid),

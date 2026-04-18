@@ -104,6 +104,10 @@ function loadNotifications() {
         icon = '💬';
         text = `${safeName} comentou no seu post`;
         action = () => window.location.href = 'feed.html';
+      } else if (n.tipo === 'mencao') {
+        icon = '📣';
+        text = `${safeName} mencionou você em um comentário`;
+        action = () => window.location.href = 'feed.html';
       } else if (n.tipo === 'seguiu') {
         icon = '👤';
         text = `${safeName} começou a te seguir`;

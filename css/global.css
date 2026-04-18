@@ -671,9 +671,19 @@ textarea.input { resize: none; line-height: 1.5; }
   width: 100%;
   cursor: pointer;
   transition: opacity 0.2s;
+  overflow: hidden;
+  display: block;
+  background: var(--bg2);
+  border-radius: 2px;
 }
 
 .profile-grid-item:hover { opacity: 0.8; }
+
+/* Menção @username destacada em comentários */
+.mention {
+  color: var(--accent);
+  font-weight: 600;
+}
 
 /* ── NOTIF ── */
 .notif-item {

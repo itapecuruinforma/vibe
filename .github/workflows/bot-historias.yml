@@ -1,0 +1,27 @@
+name: 🤖 Bot — Histórias
+
+on:
+  schedule:
+    # Todo dia às 14:30 UTC = 11:30 horário de Brasília (30 min após perguntas)
+    - cron: '30 14 * * *'
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rodar bot de histórias
+        run: node bot/historias.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
+          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}

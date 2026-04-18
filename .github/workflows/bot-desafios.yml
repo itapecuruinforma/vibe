@@ -1,0 +1,27 @@
+name: 🤖 Bot — Desafios
+
+on:
+  schedule:
+    # Todo dia às 15:30 UTC = 12:30 horário de Brasília (30 min após citações)
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rodar bot de desafios
+        run: node bot/desafios.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
+          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}

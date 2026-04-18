@@ -3,17 +3,78 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Entrar — Vibe</title>
+  <title>Vibe — Conecte-se</title>
   <link rel="stylesheet" href="css/global.css"/>
 </head>
 <body>
+
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
 </div>
 
+<!-- Orbs de fundo -->
+<div class="auth-bg">
+  <div class="auth-orb auth-orb-1"></div>
+  <div class="auth-orb auth-orb-2"></div>
+  <div class="auth-orb auth-orb-3"></div>
+</div>
+
 <div class="page-no-nav" id="app" style="display:none">
+
+  <!-- LOGO -->
   <div class="auth-logo">Vibe</div>
   <div class="auth-tagline">Conecte-se com quem importa</div>
+
+  <!-- PREVIEW SECTION -->
+  <div class="landing-preview">
+
+    <!-- Contador de usuários -->
+    <div class="landing-counter">
+      <span class="counter-fire">🔥</span>
+      <span id="userCount" class="counter-num">–</span>
+      <span class="counter-label">pessoas já vibrando</span>
+    </div>
+
+    <!-- Mini-posts rolando -->
+    <div class="preview-scroll" id="previewScroll">
+      <div class="preview-card">
+        <div class="preview-card-top">
+          <span>🙂</span><span>lucasvieira</span>
+        </div>
+        <p>Sabia que Oxford é mais antiga que os impérios asteca e inca? 🤯 #curiosidade</p>
+      </div>
+      <div class="preview-card">
+        <div class="preview-card-top">
+          <span>🌸</span><span>ana_luz</span>
+        </div>
+        <p>Esse fim de semana tá incrível ☀️ Aproveitando cada momento com quem importa 💜</p>
+      </div>
+      <div class="preview-card">
+        <div class="preview-card-top">
+          <span>🎵</span><span>rafael_m</span>
+        </div>
+        <p>Nova playlist no modo repeat 🎧 Quem mais é viciado assim? rsrs</p>
+      </div>
+      <div class="preview-card">
+        <div class="preview-card-top">
+          <span>🌿</span><span>julia_s</span>
+        </div>
+        <p>A Amazônia respira e nós respiramos junto 🌳 Que bioma incrível que temos!</p>
+      </div>
+      <div class="preview-card">
+        <div class="preview-card-top">
+          <span>⚡</span><span>marcos_t</span>
+        </div>
+        <p>Segunda-feira chegando cheio de energia! 💪 Bora vencer mais uma semana</p>
+      </div>
+    </div>
+
+    <!-- Regiões -->
+    <div class="landing-regions">
+      📍 São Luís · Teresina · Fortaleza · Belém · São Paulo
+    </div>
+
+  </div>
 
   <!-- LOGIN -->
   <div id="loginForm" class="auth-form">
@@ -32,6 +93,7 @@
     <button class="btn btn-primary" id="btnRegister" style="width:100%;padding:14px">Criar conta</button>
     <div class="auth-switch">Já tem conta? <span id="toLogin">Entrar</span></div>
   </div>
+
 </div>
 
 <div id="toast-container"></div>
@@ -67,6 +129,39 @@ onAuthStateChanged(auth, user => {
   }
 });
 
+// ── Contador de usuários (usernames é público) ──
+get(ref(db, 'usernames')).then(snap => {
+  const total = snap.exists() ? Object.keys(snap.val()).length : 1;
+  animateCounter(total);
+}).catch(() => {
+  document.getElementById('userCount').textContent = '?';
+});
+
+function animateCounter(target) {
+  const el = document.getElementById('userCount');
+  let n = 0;
+  const step = Math.max(1, Math.floor(target / 25));
+  const iv = setInterval(() => {
+    n = Math.min(n + step, target);
+    el.textContent = n;
+    if (n >= target) clearInterval(iv);
+  }, 50);
+}
+
+// ── Auto-scroll suave nos mini-posts ──
+const scroll = document.getElementById('previewScroll');
+let pos = 0;
+let autoScrolling = true;
+const scrollLoop = setInterval(() => {
+  if (!autoScrolling) return;
+  pos += 0.6;
+  if (pos >= scroll.scrollWidth - scroll.clientWidth) pos = 0;
+  scroll.scrollLeft = pos;
+}, 20);
+scroll.addEventListener('touchstart', () => { autoScrolling = false; });
+scroll.addEventListener('touchend', () => { setTimeout(() => { autoScrolling = true; }, 3000); });
+
+// ── Navegação entre formulários ──
 document.getElementById('toRegister').onclick = () => {
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('registerForm').classList.remove('hidden');
@@ -77,13 +172,12 @@ document.getElementById('toLogin').onclick = () => {
   document.getElementById('loginForm').classList.remove('hidden');
 };
 
+// ── Login ──
 document.getElementById('btnLogin').onclick = async () => {
   const email = document.getElementById('emailLogin').value.trim();
   const senha = document.getElementById('senhaLogin').value;
 
-  if (!email || !senha) {
-    return toast('Preencha todos os campos', 'error');
-  }
+  if (!email || !senha) return toast('Preencha todos os campos', 'error');
 
   const emailError = validateEmail(email);
   if (emailError) return toast(emailError, 'error');
@@ -104,44 +198,34 @@ document.getElementById('btnLogin').onclick = async () => {
   }
 };
 
+// ── Cadastro ──
 document.getElementById('btnRegister').onclick = async () => {
   const username = document.getElementById('usernameReg').value.trim().toLowerCase();
-  const emoji = document.getElementById('emojiReg').value.trim() || '😊';
-  const email = document.getElementById('emailReg').value.trim();
-  const senha = document.getElementById('senhaReg').value;
+  const emoji    = document.getElementById('emojiReg').value.trim() || '😊';
+  const email    = document.getElementById('emailReg').value.trim();
+  const senha    = document.getElementById('senhaReg').value;
 
-  // Validar username
   const usernameError = validateUsername(username);
   if (usernameError) return toast(usernameError, 'error');
 
-  // Validar emoji
   const emojiError = validateEmoji(emoji);
   if (emojiError) return toast(emojiError, 'error');
 
-  // Validar email
   const emailError = validateEmail(email);
   if (emailError) return toast(emailError, 'error');
 
-  // Validar senha
   const senhaError = validatePassword(senha);
   if (senhaError) return toast(senhaError, 'error');
 
   try {
-    // Checar username único
     const snap = await get(ref(db, 'usernames/' + username));
-    if (snap.exists()) {
-      return toast('Username já em uso', 'error');
-    }
+    if (snap.exists()) return toast('Username já em uso', 'error');
 
     const cred = await createUserWithEmailAndPassword(auth, email, senha);
     const uid = cred.user.uid;
 
     await set(ref(db, 'usuarios/' + uid), {
-      username,
-      emoji,
-      bio: '',
-      fotoPerfil: '',
-      criadoEm: Date.now()
+      username, emoji, bio: '', fotoPerfil: '', criadoEm: Date.now()
     });
 
     await set(ref(db, 'usernames/' + username), uid);

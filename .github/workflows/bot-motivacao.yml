@@ -23,5 +23,5 @@ jobs:
         run: node bot/motivacao.js
         env:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
-          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}
+          BOT_MOTIVACAO_EMAIL: ${{ secrets.BOT_MOTIVACAO_EMAIL }}
+          BOT_MOTIVACAO_PASSWORD: ${{ secrets.BOT_MOTIVACAO_PASSWORD }}

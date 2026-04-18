@@ -23,5 +23,5 @@ jobs:
         run: node bot/perguntas.js
         env:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
-          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}
+          BOT_PERGUNTAS_EMAIL: ${{ secrets.BOT_PERGUNTAS_EMAIL }}
+          BOT_PERGUNTAS_PASSWORD: ${{ secrets.BOT_PERGUNTAS_PASSWORD }}

@@ -1,9 +1,9 @@
-name: 🤖 Bot — Desafios
+name: 🤖 Bot — Gratidão
 
 on:
   schedule:
-    # Todo dia às 15:30 UTC = 12:30 horário de Brasília (30 min após citações)
-    - cron: '30 15 * * *'
+    # Todo dia às 16:00 UTC = 13:00 horário de Brasília (30 min após desafios)
+    - cron: '0 16 * * *'
   workflow_dispatch:
 
 jobs:
@@ -19,9 +19,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Rodar bot de desafios
-        run: node bot/desafios.js
+      - name: Rodar bot de gratidão
+        run: node bot/gratidao.js
         env:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          BOT_DESAFIOS_EMAIL: ${{ secrets.BOT_DESAFIOS_EMAIL }}
-          BOT_DESAFIOS_PASSWORD: ${{ secrets.BOT_DESAFIOS_PASSWORD }}
+          BOT_GRATIDAO_EMAIL: ${{ secrets.BOT_GRATIDAO_EMAIL }}
+          BOT_GRATIDAO_PASSWORD: ${{ secrets.BOT_GRATIDAO_PASSWORD }}

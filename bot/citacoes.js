@@ -6,8 +6,8 @@
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 const DB_URL           = 'https://controle-de-gasto-fc4e0-default-rtdb.firebaseio.com';
-const BOT_EMAIL        = process.env.BOT_EMAIL;
-const BOT_PASSWORD     = process.env.BOT_PASSWORD;
+const BOT_EMAIL        = process.env.BOT_CITACOES_EMAIL;
+const BOT_PASSWORD     = process.env.BOT_CITACOES_PASSWORD;
 
 // ---- 50 citações de pessoas famosas (cicla a cada 50 dias) ----------------
 const CITACOES = [
@@ -501,7 +501,7 @@ async function main() {
   console.log('🤖 Bot Citações iniciando...');
 
   if (!FIREBASE_API_KEY || !BOT_EMAIL || !BOT_PASSWORD) {
-    throw new Error('Variáveis de ambiente faltando: FIREBASE_API_KEY, BOT_EMAIL, BOT_PASSWORD');
+    throw new Error('Variáveis de ambiente faltando: FIREBASE_API_KEY, BOT_CITACOES_EMAIL, BOT_CITACOES_PASSWORD');
   }
 
   const { idToken, localId } = await signIn();

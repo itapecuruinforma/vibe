@@ -237,12 +237,18 @@ async function ensureProfile(uid, token) {
   const BIO      = 'Curioso por natureza 🌍 Aprendendo todo dia';
   const EMOJI    = '🙂';
 
-  // Sempre atualiza nome, bio e emoji (caso tenha mudado)
-  await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
+  // Atualiza o perfil (força atualização mesmo que já exista)
+  const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: USERNAME, nome: NOME, bio: BIO, emoji: EMOJI }),
   });
+  if (!r1.ok) {
+    const err = await r1.text();
+    console.error('❌ Erro ao atualizar perfil:', err);
+  } else {
+    console.log('✅ Perfil atualizado:', NOME);
+  }
 
   // Registra o username (só funciona se ainda não existe)
   await fetch(`${DB_URL}/usernames/${USERNAME}.json?auth=${token}`, {
@@ -250,22 +256,29 @@ async function ensureProfile(uid, token) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(uid),
   });
-
-  console.log('✅ Perfil criado!');
 }
 
 async function jaPostouHoje(uid, token) {
-  // Início do dia atual em ms (meia-noite UTC)
+  // Checa campo 'ultimoPostDia' no perfil do bot (dia do ano, ex: 20260418)
+  const res = await fetch(`${DB_URL}/usuarios/${uid}/ultimoPostDia.json?auth=${token}`);
+  const ultimoPostDia = await res.json();
+
   const hoje = new Date();
-  const inicioDia = Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate());
+  const diaHoje = `${hoje.getUTCFullYear()}${String(hoje.getUTCMonth()+1).padStart(2,'0')}${String(hoje.getUTCDate()).padStart(2,'0')}`;
 
-  const res = await fetch(
-    `${DB_URL}/posts.json?auth=${token}&orderBy="uid"&equalTo="${uid}"&limitToLast=5`,
-  );
-  const posts = await res.json();
-  if (!posts) return false;
+  console.log('Último post:', ultimoPostDia, '| Hoje:', diaHoje);
+  return String(ultimoPostDia) === diaHoje;
+}
 
-  return Object.values(posts).some(p => p.timestamp >= inicioDia);
+async function marcarPostoHoje(uid, token) {
+  const hoje = new Date();
+  const diaHoje = `${hoje.getUTCFullYear()}${String(hoje.getUTCMonth()+1).padStart(2,'0')}${String(hoje.getUTCDate()).padStart(2,'0')}`;
+
+  await fetch(`${DB_URL}/usuarios/${uid}/ultimoPostDia.json?auth=${token}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Number(diaHoje)),
+  });
 }
 
 async function publicarCuriosidade(uid, token) {
@@ -312,6 +325,7 @@ async function main() {
   }
 
   const texto = await publicarCuriosidade(localId, idToken);
+  await marcarPostoHoje(localId, idToken);
   console.log('✅ Postado com sucesso!');
   console.log('📝', texto.split('\n')[0]);
 }

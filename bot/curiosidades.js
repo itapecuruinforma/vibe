@@ -254,6 +254,20 @@ async function ensureProfile(uid, token) {
   console.log('✅ Perfil criado!');
 }
 
+async function jaPostouHoje(uid, token) {
+  // Início do dia atual em ms (meia-noite UTC)
+  const hoje = new Date();
+  const inicioDia = Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate());
+
+  const res = await fetch(
+    `${DB_URL}/posts.json?auth=${token}&orderBy="uid"&equalTo="${uid}"&limitToLast=5`,
+  );
+  const posts = await res.json();
+  if (!posts) return false;
+
+  return Object.values(posts).some(p => p.timestamp >= inicioDia);
+}
+
 async function publicarCuriosidade(uid, token) {
   // Escolhe a curiosidade com base no dia atual (determinístico, sem repetir por 50 dias)
   const diaAtual = Math.floor(Date.now() / 86400000);
@@ -289,6 +303,13 @@ async function main() {
   console.log('✅ Login OK — UID:', localId);
 
   await ensureProfile(localId, idToken);
+
+  // Proteção: não posta duas vezes no mesmo dia
+  const jaPostou = await jaPostouHoje(localId, idToken);
+  if (jaPostou) {
+    console.log('⏭️ Já postou hoje. Pulando.');
+    return;
+  }
 
   const texto = await publicarCuriosidade(localId, idToken);
   console.log('✅ Postado com sucesso!');

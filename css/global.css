@@ -685,6 +685,77 @@ textarea.input { resize: none; line-height: 1.5; }
   font-weight: 600;
 }
 
+/* ── REDES SOCIAIS NO PERFIL ── */
+.social-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.social-link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #fff;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.social-link-badge:hover { opacity: 0.85; }
+
+/* ── POST TIPO LINK (cross-post) ── */
+.post-link-card {
+  margin: 0 16px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.post-link-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.post-link-body {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text1);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.post-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 14px 14px;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.post-link-btn:hover { background: var(--bg3); }
+
 /* ── NOTIF ── */
 .notif-item {
   display: flex;

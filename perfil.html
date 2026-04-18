@@ -29,6 +29,27 @@
       </div>
       <input class="input" id="editEmoji" placeholder="Emoji"/>
       <textarea class="input" id="editBio" rows="3" placeholder="Bio..."></textarea>
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;font-weight:600">🔗 SUAS REDES SOCIAIS</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;width:24px;text-align:center">📸</span>
+            <input class="input" id="editInstagram" placeholder="Instagram (só o @usuário)" style="flex:1;font-size:13px;padding:8px 10px"/>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;width:24px;text-align:center">𝕏</span>
+            <input class="input" id="editX" placeholder="X / Twitter (só o @usuário)" style="flex:1;font-size:13px;padding:8px 10px"/>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;width:24px;text-align:center">🎵</span>
+            <input class="input" id="editTiktok" placeholder="TikTok (só o @usuário)" style="flex:1;font-size:13px;padding:8px 10px"/>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px;width:24px;text-align:center">▶️</span>
+            <input class="input" id="editYoutube" placeholder="YouTube (@canal ou URL)" style="flex:1;font-size:13px;padding:8px 10px"/>
+          </div>
+        </div>
+      </div>
       <button class="btn btn-primary" id="btnSaveEdit" style="width:100%">Salvar</button>
     </div>
   </div>
@@ -208,6 +229,34 @@ async function loadProfile() {
   document.getElementById('profileName').textContent = `${u.emoji || '👤'} ${u.username || ''}`;
   document.getElementById('profileBio').textContent = u.bio || '';
 
+  // Redes sociais
+  const existingSocial = document.getElementById('socialLinksRow');
+  if (existingSocial) existingSocial.remove();
+  const redes = u.redes || {};
+  const redesDef = [
+    { key: 'instagram', icon: '📸', name: 'Instagram', color: '#E1306C', url: h => `https://instagram.com/${h}` },
+    { key: 'x',         icon: '𝕏',  name: 'X',         color: '#000',    url: h => `https://x.com/${h}` },
+    { key: 'tiktok',    icon: '🎵', name: 'TikTok',    color: '#010101', url: h => `https://tiktok.com/@${h}` },
+    { key: 'youtube',   icon: '▶️', name: 'YouTube',   color: '#FF0000', url: h => h.startsWith('http') ? h : `https://youtube.com/@${h}` }
+  ];
+  const activeRedes = redesDef.filter(r => redes[r.key]);
+  if (activeRedes.length > 0) {
+    const row = document.createElement('div');
+    row.id = 'socialLinksRow';
+    row.className = 'social-links-row';
+    activeRedes.forEach(r => {
+      const a = document.createElement('a');
+      a.className = 'social-link-badge';
+      a.style.background = r.color;
+      a.href = r.url(redes[r.key].replace('@', ''));
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = `${r.icon} ${redes[r.key]}`;
+      row.appendChild(a);
+    });
+    document.getElementById('profileBio').after(row);
+  }
+
   const avatarEl = document.getElementById('profileAvatar');
   if (u.fotoPerfil) {
     avatarEl.innerHTML = `<img class="avatar" src="${u.fotoPerfil}" style="width:80px;height:80px"/>`;
@@ -225,6 +274,11 @@ async function loadProfile() {
 
   document.getElementById('editEmoji').value = u.emoji || '';
   document.getElementById('editBio').value = u.bio || '';
+  const r = u.redes || {};
+  document.getElementById('editInstagram').value = r.instagram || '';
+  document.getElementById('editX').value = r.x || '';
+  document.getElementById('editTiktok').value = r.tiktok || '';
+  document.getElementById('editYoutube').value = r.youtube || '';
 
   // Stats
   const followerSnap = await get(ref(db, `usuarios/${profileUid}/seguidores`));
@@ -513,8 +567,19 @@ document.getElementById('btnSaveEdit').onclick = async () => {
     }
   }
 
+  // Coletar redes sociais
+  const redes = {};
+  const ig = document.getElementById('editInstagram').value.trim().replace('@', '');
+  const xh = document.getElementById('editX').value.trim().replace('@', '');
+  const tt = document.getElementById('editTiktok').value.trim().replace('@', '');
+  const yt = document.getElementById('editYoutube').value.trim();
+  if (ig) redes.instagram = ig;
+  if (xh) redes.x = xh;
+  if (tt) redes.tiktok = tt;
+  if (yt) redes.youtube = yt.replace('@', '');
+
   const current = (await get(ref(db, 'usuarios/' + currentUser.uid))).val() || {};
-  const updates = { ...current, emoji, bio };
+  const updates = { ...current, emoji, bio, redes };
   if (fotoPerfil) updates.fotoPerfil = fotoPerfil;
   await set(ref(db, 'usuarios/' + currentUser.uid), updates);
 

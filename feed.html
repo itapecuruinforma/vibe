@@ -96,6 +96,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
         Texto
       </button>
+      <button class="post-type-tab" data-type="link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Link
+      </button>
     </div>
 
     <!-- Preview de mídia -->
@@ -103,6 +107,12 @@
       <img id="postPreview" style="width:100%;border-radius:12px;object-fit:cover;max-height:300px;display:none"/>
       <video id="postVideoPreview" style="width:100%;border-radius:12px;max-height:300px;display:none" controls></video>
       <button id="btnRemoveMedia" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px">×</button>
+    </div>
+
+    <!-- Campo de URL (para tipo link) -->
+    <div id="linkInputWrap" style="display:none;margin-bottom:12px">
+      <input class="input" id="linkUrl" placeholder="Cole o link do seu post (Instagram, X, TikTok...)" style="margin-bottom:6px"/>
+      <div id="linkPreviewBadge" style="display:none;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;display:inline-flex;align-items:center;gap:6px"></div>
     </div>
 
     <!-- Botão de selecionar (muda conforme a tab) -->
@@ -461,7 +471,12 @@ async function buildPostCard(post) {
 
   // Corpo do post conforme o tipo
   let bodyHtml = '';
-  if (tipo === 'foto') {
+  if (tipo === 'link') {
+    const plat = detectPlatform(post.url || '') || { icon: '🔗', name: 'Link', color: 'var(--accent)' };
+    const safeCaption = sanitizeText(post.legenda || '');
+    // bodyHtml construído via DOM depois (não via innerHTML pra não criar XSS com URL)
+    bodyHtml = `<div id="linkcard-${post.id}" class="post-link-card"></div>`;
+  } else if (tipo === 'foto') {
     bodyHtml = `
       <div class="post-img-wrap">
         <img class="post-img" src="${post.imagemUrl}" loading="lazy"/>
@@ -506,6 +521,34 @@ async function buildPostCard(post) {
     ${commentCount > 0 ? `<div class="post-comments-preview" onclick="openComments('${post.id}')">Ver todos os ${commentCount} comentários</div>` : ''}
     <div class="post-time-bottom">${timeAgoFull(post.timestamp)}</div>
   `;
+
+  // Montar link card (seguro via DOM, sem innerHTML com dados do usuário)
+  if (tipo === 'link') {
+    const plat = detectPlatform(post.url || '') || { icon: '🔗', name: 'Link', color: 'var(--accent)' };
+    const lc = card.querySelector(`#linkcard-${post.id}`);
+    if (lc) {
+      const header = document.createElement('div');
+      header.className = 'post-link-header';
+      header.style.background = plat.color;
+      header.textContent = `${plat.icon}  ${plat.name}`;
+      lc.appendChild(header);
+
+      if (post.legenda) {
+        const body = document.createElement('div');
+        body.className = 'post-link-body';
+        body.textContent = sanitizeText(post.legenda);
+        lc.appendChild(body);
+      }
+
+      const btn = document.createElement('a');
+      btn.className = 'post-link-btn';
+      btn.href = post.url;
+      btn.target = '_blank';
+      btn.rel = 'noopener noreferrer';
+      btn.textContent = `${plat.icon} Ver post no ${plat.name} →`;
+      lc.appendChild(btn);
+    }
+  }
 
   // Like button
   card.querySelector(`#like-${post.id}`).onclick = () => toggleLike(post.id);
@@ -836,8 +879,24 @@ document.getElementById('sendComment').onclick = async () => {
   }
 };
 
+// ── DETECÇÃO DE PLATAFORMA ──
+function detectPlatform(url) {
+  try {
+    const host = new URL(url).hostname.replace('www.', '');
+    if (host.includes('instagram.com')) return { id: 'instagram', name: 'Instagram', icon: '📸', color: '#E1306C' };
+    if (host.includes('twitter.com') || host.includes('x.com')) return { id: 'x', name: 'X (Twitter)', icon: '𝕏', color: '#14171A' };
+    if (host.includes('tiktok.com')) return { id: 'tiktok', name: 'TikTok', icon: '🎵', color: '#010101' };
+    if (host.includes('youtube.com') || host.includes('youtu.be')) return { id: 'youtube', name: 'YouTube', icon: '▶️', color: '#FF0000' };
+    if (host.includes('facebook.com') || host.includes('fb.com')) return { id: 'facebook', name: 'Facebook', icon: '👥', color: '#1877F2' };
+    if (host.includes('threads.net')) return { id: 'threads', name: 'Threads', icon: '🧵', color: '#101010' };
+    if (host.includes('linkedin.com')) return { id: 'linkedin', name: 'LinkedIn', icon: '💼', color: '#0A66C2' };
+    if (host.includes('pinterest.com')) return { id: 'pinterest', name: 'Pinterest', icon: '📌', color: '#E60023' };
+    return { id: 'link', name: host, icon: '🔗', color: 'var(--accent)' };
+  } catch { return null; }
+}
+
 // ── NEW POST ──
-let postType = 'foto'; // 'foto' | 'video' | 'texto'
+let postType = 'foto'; // 'foto' | 'video' | 'texto' | 'link'
 
 document.getElementById('btnNewPost').onclick = () => {
   document.getElementById('newPostModal').classList.remove('hidden');
@@ -856,30 +915,46 @@ function setPostType(type) {
   const caption = document.getElementById('postCaption');
   const counter = document.getElementById('captionCounter');
   const storyBtn = document.getElementById('btnPostStory');
+  const linkWrap = document.getElementById('linkInputWrap');
 
   // Reset preview
   clearMediaPreview();
+  document.getElementById('linkUrl').value = '';
+  document.getElementById('linkPreviewBadge').style.display = 'none';
 
   if (type === 'foto') {
     selectBtn.style.display = '';
     selectBtn.textContent = '📷 Selecionar foto';
     input.accept = 'image/*';
     caption.placeholder = 'Escreva uma legenda...';
+    caption.style.display = '';
     counter.style.display = 'none';
     storyBtn.style.display = '';
+    linkWrap.style.display = 'none';
   } else if (type === 'video') {
     selectBtn.style.display = '';
     selectBtn.textContent = '🎬 Selecionar vídeo (até 30s)';
     input.accept = 'video/mp4,video/webm,video/quicktime';
     caption.placeholder = 'Escreva uma legenda...';
+    caption.style.display = '';
     counter.style.display = 'none';
-    storyBtn.style.display = 'none'; // stories são só foto por enquanto
+    storyBtn.style.display = 'none';
+    linkWrap.style.display = 'none';
   } else if (type === 'texto') {
     selectBtn.style.display = 'none';
     caption.placeholder = 'No que você está pensando?';
+    caption.style.display = '';
     counter.style.display = '';
     updateCaptionCounter();
     storyBtn.style.display = 'none';
+    linkWrap.style.display = 'none';
+  } else if (type === 'link') {
+    selectBtn.style.display = 'none';
+    caption.placeholder = 'Conte o que você postou... (opcional)';
+    caption.style.display = '';
+    counter.style.display = 'none';
+    storyBtn.style.display = 'none';
+    linkWrap.style.display = '';
   }
 }
 
@@ -908,6 +983,19 @@ document.querySelectorAll('.post-type-tab').forEach(tab => {
 
 document.getElementById('btnSelectMedia').onclick = () => document.getElementById('mediaInput').click();
 document.getElementById('btnRemoveMedia').onclick = clearMediaPreview;
+
+// Preview de plataforma ao digitar URL
+document.getElementById('linkUrl').oninput = (e) => {
+  const badge = document.getElementById('linkPreviewBadge');
+  const plat = detectPlatform(e.target.value.trim());
+  if (plat && e.target.value.trim().startsWith('http')) {
+    badge.style.display = 'inline-flex';
+    badge.style.background = plat.color;
+    badge.textContent = `${plat.icon} ${plat.name} detectado`;
+  } else {
+    badge.style.display = 'none';
+  }
+};
 
 document.getElementById('mediaInput').onchange = async (e) => {
   const file = e.target.files[0];
@@ -958,6 +1046,10 @@ async function publish(isStory = false) {
   if (postType === 'texto') {
     if (!caption) return toast('Escreva algo', 'error');
     if (caption.length > 500) return toast('Texto muito longo (máx 500)', 'error');
+  } else if (postType === 'link') {
+    const urlVal = document.getElementById('linkUrl').value.trim();
+    if (!urlVal) return toast('Cole o link do seu post', 'error');
+    if (!detectPlatform(urlVal)) return toast('URL inválida. Comece com https://', 'error');
   } else {
     if (!selectedFile) return toast('Selecione uma mídia', 'error');
     if (caption) {
@@ -982,6 +1074,26 @@ async function publish(isStory = false) {
       });
       toast('Post publicado! 🎉', 'success');
       selectedFile = null;
+      document.getElementById('postCaption').value = '';
+      document.getElementById('newPostModal').classList.add('hidden');
+      return;
+    }
+
+    // POST TIPO LINK: cross-post de outra rede
+    if (postType === 'link') {
+      const urlVal = document.getElementById('linkUrl').value.trim();
+      const plat = detectPlatform(urlVal);
+      await push(ref(db, 'posts'), {
+        uid: currentUser.uid,
+        tipo: 'link',
+        url: urlVal,
+        plataforma: plat ? plat.id : 'link',
+        legenda: safeCaption,
+        timestamp: Date.now()
+      });
+      toast(`Compartilhado na Vibe! 🔗`, 'success');
+      document.getElementById('linkUrl').value = '';
+      document.getElementById('linkPreviewBadge').style.display = 'none';
       document.getElementById('postCaption').value = '';
       document.getElementById('newPostModal').classList.add('hidden');
       return;

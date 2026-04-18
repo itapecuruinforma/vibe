@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Perfil — Vibe</title>
+  <title>Presença — Vibe</title>
   <link rel="stylesheet" href="css/global.css"/>
 </head>
 <body>
@@ -17,7 +17,7 @@
 <div id="editModal" class="modal-backdrop hidden">
   <div class="modal-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="font-family:'Syne',sans-serif">Editar perfil</h3>
+      <h3 style="font-family:'Syne',sans-serif">Editar presença</h3>
       <button class="btn-ghost" id="closeEdit" style="font-size:22px;padding:4px 8px">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -72,7 +72,7 @@
   </div>
 
   <div class="profile-stats" style="margin-bottom:16px">
-    <div class="stat-item" id="statPosts"><div class="stat-num" id="postCount">0</div><div class="stat-label">posts</div></div>
+    <div class="stat-item" id="statPosts"><div class="stat-num" id="postCount">0</div><div class="stat-label">vibes</div></div>
     <div class="stat-item" id="statFollowers"><div class="stat-num" id="followerCount">0</div><div class="stat-label">seguidores</div></div>
     <div class="stat-item" id="statFollowing"><div class="stat-num" id="followingCount">0</div><div class="stat-label">seguindo</div></div>
   </div>
@@ -81,8 +81,8 @@
 
   <!-- TABS -->
   <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:16px">
-    <button class="btn-ghost" id="tabPosts" style="flex:1;border-bottom:2px solid var(--accent);border-radius:0;color:var(--accent)">Posts</button>
-    <button class="btn-ghost" id="tabLikes" style="flex:1;border-bottom:2px solid transparent;border-radius:0">Curtidas</button>
+    <button class="btn-ghost" id="tabPosts" style="flex:1;border-bottom:2px solid var(--accent);border-radius:0;color:var(--accent)">Vibes</button>
+    <button class="btn-ghost" id="tabLikes" style="flex:1;border-bottom:2px solid transparent;border-radius:0">Vibradas</button>
   </div>
 
   <div class="profile-grid" id="postsGrid"></div>
@@ -92,23 +92,23 @@
 <nav class="bottom-nav">
   <a href="feed.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-    Feed
+    Onda
   </a>
   <a href="buscar.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    Buscar
+    Explorar
   </a>
   <a href="mensagens.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-    Chat
+    Papo
   </a>
   <a href="notificacoes.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    Notif
+    Sinais
   </a>
   <a href="perfil.html" class="active">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-    Perfil
+    Presença
   </a>
 </nav>
 
@@ -163,7 +163,7 @@ function setupTopbarMenu() {
     if (isMyProfile) {
       // Menu próprio: editar / sair
       abrirMenuContexto(btn, [
-        { label: 'Editar perfil', icon: '✏️', onClick: () => document.getElementById('editModal').classList.remove('hidden') },
+        { label: 'Editar presença', icon: '✏️', onClick: () => document.getElementById('editModal').classList.remove('hidden') },
         { label: 'Sair', icon: '🚪', danger: true, onClick: async () => { await signOut(auth); window.location.href = 'index.html'; } }
       ]);
     } else {
@@ -296,7 +296,7 @@ async function loadProfile() {
   btns.innerHTML = '';
   if (isMyProfile) {
     btns.innerHTML = `
-      <button class="btn btn-outline" id="btnEdit" style="flex:1">Editar perfil</button>
+      <button class="btn btn-outline" id="btnEdit" style="flex:1">Editar presença</button>
       <button class="btn btn-danger" id="btnLogout" style="flex:0">Sair</button>`;
     document.getElementById('btnEdit').onclick = () => document.getElementById('editModal').classList.remove('hidden');
     document.getElementById('btnLogout').onclick = async () => { await signOut(auth); window.location.href = 'index.html'; };
@@ -317,7 +317,7 @@ async function loadProfile() {
       const followBtn = document.createElement('button');
       followBtn.className = `btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`;
       followBtn.style.flex = '1';
-      followBtn.textContent = isFollowing ? 'Seguindo' : 'Seguir';
+      followBtn.textContent = isFollowing ? 'Sintonizado' : 'Sintonizar';
       followBtn.onclick = () => toggleFollow(followBtn, isFollowing);
       btns.appendChild(followBtn);
 
@@ -339,14 +339,14 @@ async function toggleFollow(btn, wasFollowing) {
     await remove(followerRef);
     await remove(followingRef);
     btn.className = 'btn btn-primary';
-    btn.textContent = 'Seguir';
+    btn.textContent = 'Sintonizar';
     const count = parseInt(document.getElementById('followerCount').textContent) - 1;
     document.getElementById('followerCount').textContent = count;
   } else {
     await set(followerRef, true);
     await set(followingRef, true);
     btn.className = 'btn btn-outline';
-    btn.textContent = 'Seguindo';
+    btn.textContent = 'Sintonizado';
     const count = parseInt(document.getElementById('followerCount').textContent) + 1;
     document.getElementById('followerCount').textContent = count;
     // Notify
@@ -367,7 +367,7 @@ function loadPosts() {
     const posts = [];
     snap.forEach(c => { if (c.val().uid === profileUid) posts.unshift({ id: c.key, ...c.val() }); });
     if (posts.length === 0) {
-      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">📷</div><p>Sem posts ainda</p></div>';
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">📷</div><p>Sem Vibes ainda</p></div>';
       return;
     }
     posts.forEach(p => {
@@ -422,7 +422,7 @@ async function loadLikedPosts() {
     if (p.curtidas && p.curtidas[profileUid]) liked.unshift({ id: c.key, ...p });
   });
   if (liked.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">🤍</div><p>Nenhuma curtida ainda</p></div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">🤍</div><p>Nenhuma vibração ainda</p></div>';
     return;
   }
   liked.forEach(p => {
@@ -583,7 +583,7 @@ document.getElementById('btnSaveEdit').onclick = async () => {
   if (fotoPerfil) updates.fotoPerfil = fotoPerfil;
   await set(ref(db, 'usuarios/' + currentUser.uid), updates);
 
-  toast('Perfil atualizado!', 'success');
+  toast('Presença atualizada!', 'success');
   document.getElementById('editModal').classList.add('hidden');
   loadProfile();
 };

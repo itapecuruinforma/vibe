@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Feed — Vibe</title>
+  <title>Onda — Vibe</title>
   <link rel="stylesheet" href="css/global.css"/>
 </head>
 <body>
@@ -32,12 +32,12 @@
 <div id="commentModal" class="modal-backdrop hidden">
   <div class="modal-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="font-family:'Syne',sans-serif">Comentários</h3>
+      <h3 style="font-family:'Syne',sans-serif">Papos</h3>
       <button class="btn-ghost" id="closeComments" style="font-size:22px;padding:4px 8px">×</button>
     </div>
     <div id="commentsList" style="max-height:300px;overflow-y:auto;margin-bottom:16px"></div>
     <div style="display:flex;gap:8px">
-      <input class="input" id="commentInput" placeholder="Adicionar comentário..." style="flex:1"/>
+      <input class="input" id="commentInput" placeholder="Adicionar papo..." style="flex:1"/>
       <button class="btn btn-primary" id="sendComment" style="padding:10px 16px">→</button>
     </div>
   </div>
@@ -78,7 +78,7 @@
 <div id="newPostModal" class="modal-backdrop hidden">
   <div class="modal-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="font-family:'Syne',sans-serif">Novo post</h3>
+      <h3 style="font-family:'Syne',sans-serif">Nova Vibe</h3>
       <button class="btn-ghost" id="closeNewPost" style="font-size:22px;padding:4px 8px">×</button>
     </div>
 
@@ -124,8 +124,8 @@
     <div id="captionCounter" style="font-size:11px;color:var(--text3);text-align:right;margin-top:-8px;margin-bottom:10px;display:none">0 / 500</div>
 
     <div style="display:flex;gap:8px">
-      <button class="btn btn-outline" id="btnPostStory" style="flex:1">Story (24h)</button>
-      <button class="btn btn-primary" id="btnPublish" style="flex:1">Publicar</button>
+      <button class="btn btn-outline" id="btnPostStory" style="flex:1">Momento (24h)</button>
+      <button class="btn btn-primary" id="btnPublish" style="flex:1">Publicar Vibe</button>
     </div>
     <div id="uploadProgress" class="hidden" style="margin-top:12px">
       <div style="background:var(--bg3);border-radius:50px;height:6px;overflow:hidden">
@@ -139,23 +139,23 @@
 <nav class="bottom-nav">
   <a href="feed.html" class="active">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-    Feed
+    Onda
   </a>
   <a href="buscar.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    Buscar
+    Explorar
   </a>
   <a href="mensagens.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-    Chat
+    Papo
   </a>
   <a href="notificacoes.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    Notif
+    Sinais
   </a>
   <a href="perfil.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-    Perfil
+    Presença
   </a>
 </nav>
 
@@ -239,7 +239,7 @@ function loadStories() {
         <div class="avatar-placeholder" style="width:52px;height:52px;font-size:22px;border:none">+</div>
       </div>
     </div>
-    <span>Seu story</span>`;
+    <span>Seu Momento</span>`;
   addBtn.onclick = () => {
     document.getElementById('btnPostStory').scrollIntoView();
     document.getElementById('newPostModal').classList.remove('hidden');
@@ -399,7 +399,7 @@ function loadFeed() {
     const visiblePosts = posts.filter(p => !isBlocked(p.uid));
 
     if (visiblePosts.length === 0) {
-      container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhum post ainda. Seja o primeiro!</p></div>';
+      container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Nenhuma Vibe ainda. Seja o primeiro!</p></div>';
       return;
     }
 
@@ -427,7 +427,7 @@ function addLoadMoreBtn(container) {
   btn.id = 'loadMoreBtn';
   btn.className = 'btn btn-outline';
   btn.style.cssText = 'width:calc(100% - 32px);margin:8px 16px 24px;font-size:14px';
-  btn.textContent = '↓ Carregar mais posts';
+  btn.textContent = '↓ Carregar mais Vibes';
   btn.onclick = () => loadMorePosts(container);
   container.appendChild(btn);
 }
@@ -456,7 +456,7 @@ async function loadMorePosts(container) {
     if (visiblePosts.length === 0) {
       const end = document.createElement('div');
       end.style.cssText = 'text-align:center;color:var(--text3);font-size:13px;padding:24px 16px';
-      end.textContent = '✓ Você chegou ao início do feed';
+      end.textContent = '✓ Você chegou ao início das Ondas';
       container.appendChild(end);
       return;
     }
@@ -473,12 +473,12 @@ async function loadMorePosts(container) {
     } else {
       const end = document.createElement('div');
       end.style.cssText = 'text-align:center;color:var(--text3);font-size:13px;padding:24px 16px';
-      end.textContent = '✓ Você chegou ao início do feed';
+      end.textContent = '✓ Você chegou ao início das Ondas';
       container.appendChild(end);
     }
   } catch (e) {
     console.error('Erro ao carregar mais:', e);
-    if (btn) { btn.disabled = false; btn.textContent = '↓ Carregar mais posts'; }
+    if (btn) { btn.disabled = false; btn.textContent = '↓ Carregar mais Vibes'; }
   } finally {
     loadingMore = false;
   }
@@ -555,12 +555,12 @@ async function buildPostCard(post) {
       <span class="spacer"></span>
       <button class="action-btn" aria-label="Salvar">${SVG_BOOKMARK}</button>
     </div>
-    ${likeCount > 0 ? `<div class="post-likes">${likeCount} ${likeCount === 1 ? 'curtida' : 'curtidas'}</div>` : ''}
+    ${likeCount > 0 ? `<div class="post-likes">${likeCount} ${likeCount === 1 ? 'vibe ⚡' : 'vibes ⚡'}</div>` : ''}
     ${post.legenda && tipo !== 'texto' ? `
       <div class="post-caption">
         <strong onclick="goProfile('${post.uid}')">${u.username}</strong><span>${escapeHTML(post.legenda)}</span>
       </div>` : ''}
-    ${commentCount > 0 ? `<div class="post-comments-preview" onclick="openComments('${post.id}')">Ver todos os ${commentCount} comentários</div>` : ''}
+    ${commentCount > 0 ? `<div class="post-comments-preview" onclick="openComments('${post.id}')">Ver todos os ${commentCount} papos</div>` : ''}
     <div class="post-time-bottom">${timeAgoFull(post.timestamp)}</div>
   `;
 
@@ -857,7 +857,7 @@ document.getElementById('sendComment').onclick = async () => {
   const txt = document.getElementById('commentInput').value.trim();
 
   // Validação básica
-  if (!txt || !currentPostId) return toast('Comentário não pode estar vazio', 'error');
+  if (!txt || !currentPostId) return toast('Papo não pode estar vazio', 'error');
 
   // Validar comentário
   const error = validateComment(txt);
@@ -915,7 +915,7 @@ document.getElementById('sendComment').onclick = async () => {
     }
 
     document.getElementById('commentInput').value = '';
-    toast('Comentário adicionado!', 'success');
+    toast('Papo adicionado!', 'success');
   } catch (e) {
     toast('Erro ao comentar: ' + e.message, 'error');
   }
@@ -1114,7 +1114,7 @@ async function publish(isStory = false) {
         texto: safeCaption,
         timestamp: Date.now()
       });
-      toast('Post publicado! 🎉', 'success');
+      toast('Vibe publicada! 🎉', 'success');
       selectedFile = null;
       document.getElementById('postCaption').value = '';
       document.getElementById('newPostModal').classList.add('hidden');
@@ -1133,7 +1133,7 @@ async function publish(isStory = false) {
         legenda: safeCaption,
         timestamp: Date.now()
       });
-      toast(`Compartilhado na Vibe! 🔗`, 'success');
+      toast(`Vibe compartilhada! 🔗`, 'success');
       document.getElementById('linkUrl').value = '';
       document.getElementById('linkPreviewBadge').style.display = 'none';
       document.getElementById('postCaption').value = '';
@@ -1167,7 +1167,7 @@ async function publish(isStory = false) {
         imagemUrl: url,
         timestamp: Date.now()
       });
-      toast('Story publicado! ✨', 'success');
+      toast('Momento publicado! ✨', 'success');
     } else if (isVideo) {
       await push(ref(db, 'posts'), {
         uid: currentUser.uid,
@@ -1176,7 +1176,7 @@ async function publish(isStory = false) {
         legenda: safeCaption,
         timestamp: Date.now()
       });
-      toast('Vídeo publicado! 🎬', 'success');
+      toast('Vibe publicada! 🎬', 'success');
     } else {
       await push(ref(db, 'posts'), {
         uid: currentUser.uid,
@@ -1185,7 +1185,7 @@ async function publish(isStory = false) {
         legenda: safeCaption,
         timestamp: Date.now()
       });
-      toast('Post publicado! 🎉', 'success');
+      toast('Vibe publicada! 🎉', 'success');
     }
 
     // Limpar

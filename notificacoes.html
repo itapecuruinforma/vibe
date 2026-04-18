@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Notificações — Vibe</title>
+  <title>Sinais — Vibe</title>
   <link rel="stylesheet" href="css/global.css"/>
 </head>
 <body>
 
 <div class="topbar">
   <button class="btn-ghost" onclick="history.back()" style="font-size:20px;padding:4px 8px">←</button>
-  <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px">Notificações</span>
-  <button class="btn-ghost" id="btnMarkAll" style="font-size:12px;color:var(--accent)">Marcar lidas</button>
+  <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px">Sinais</span>
+  <button class="btn-ghost" id="btnMarkAll" style="font-size:12px;color:var(--accent)">Limpar sinais</button>
 </div>
 
 <div class="page" id="app" style="display:none">
@@ -21,23 +21,23 @@
 <nav class="bottom-nav">
   <a href="feed.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-    Feed
+    Onda
   </a>
   <a href="buscar.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    Buscar
+    Explorar
   </a>
   <a href="mensagens.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-    Chat
+    Papo
   </a>
   <a href="notificacoes.html" class="active">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    Notif
+    Sinais
   </a>
   <a href="perfil.html">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-    Perfil
+    Presença
   </a>
 </nav>
 
@@ -79,7 +79,7 @@ function loadNotifications() {
   onValue(ref(db, `notificacoes/${currentUser.uid}`), async snap => {
     list.innerHTML = '';
     if (!snap.exists()) {
-      list.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><p>Sem notificações</p></div>';
+      list.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><p>Sem sinais</p></div>';
       return;
     }
     const notifs = [];
@@ -98,19 +98,19 @@ function loadNotifications() {
 
       if (n.tipo === 'curtida') {
         icon = '❤️';
-        text = `${safeName} curtiu seu post`;
+        text = `${safeName} vibrou na sua Vibe ⚡`;
         action = () => window.location.href = 'feed.html';
       } else if (n.tipo === 'comentario') {
         icon = '💬';
-        text = `${safeName} comentou no seu post`;
+        text = `${safeName} papo na sua Vibe 💬`;
         action = () => window.location.href = 'feed.html';
       } else if (n.tipo === 'mencao') {
         icon = '📣';
-        text = `${safeName} mencionou você em um comentário`;
+        text = `${safeName} te mencionou num papo 📣`;
         action = () => window.location.href = 'feed.html';
       } else if (n.tipo === 'seguiu') {
         icon = '👤';
-        text = `${safeName} começou a te seguir`;
+        text = `${safeName} sintonizou com você 🎵`;
         action = () => window.location.href = `perfil.html?uid=${n.de}`;
       }
 

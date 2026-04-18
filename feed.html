@@ -247,36 +247,71 @@ function loadStories() {
   row.appendChild(addBtn);
 
   const cutoff = Date.now() - 86400000;
-  onValue(ref(db, 'stories'), async snap => {
-    // Remove old story thumbs except first
-    while (row.children.length > 1) row.removeChild(row.lastChild);
+  onValue(
+    ref(db, 'stories'),
+    async snap => {
+      // Remove old story thumbs except first ("+" button)
+      while (row.children.length > 1) row.removeChild(row.lastChild);
 
-    const storiesByUser = {};
-    snap.forEach(child => {
-      const s = child.val();
-      if (s.timestamp < cutoff) return;
-      if (!storiesByUser[s.uid]) storiesByUser[s.uid] = [];
-      storiesByUser[s.uid].push({ id: child.key, ...s });
-    });
+      const storiesByUser = {};
+      snap.forEach(child => {
+        const s = child.val();
+        if (!s || !s.uid || !s.timestamp) return;
+        if (s.timestamp < cutoff) return;
+        if (!storiesByUser[s.uid]) storiesByUser[s.uid] = [];
+        storiesByUser[s.uid].push({ id: child.key, ...s });
+      });
 
-    for (const uid in storiesByUser) {
-      const u = await getUser(uid);
-      const thumb = document.createElement('div');
-      thumb.className = 'story-thumb';
-      const seen = storiesByUser[uid].every(s => s.visto && s.visto[currentUser.uid]);
-      thumb.innerHTML = `
-        <div class="story-ring ${seen ? 'seen' : ''}">
-          <div class="story-ring-inner">
-            ${u.fotoPerfil
-              ? `<img class="avatar" src="${u.fotoPerfil}" style="width:52px;height:52px"/>`
-              : `<div class="avatar-placeholder" style="width:52px;height:52px;font-size:22px;border:none">${u.emoji}</div>`}
-          </div>
-        </div>
-        <span>${u.username}</span>`;
-      thumb.onclick = () => openStoryViewer(storiesByUser[uid], u);
-      row.appendChild(thumb);
+      for (const uid in storiesByUser) {
+        try {
+          const u = await getUser(uid);
+          const thumb = document.createElement('div');
+          thumb.className = 'story-thumb';
+          const seen = storiesByUser[uid].every(s => s.visto && s.visto[currentUser.uid]);
+
+          // Avatar
+          const ringDiv = document.createElement('div');
+          ringDiv.className = `story-ring ${seen ? 'seen' : ''}`;
+          const innerDiv = document.createElement('div');
+          innerDiv.className = 'story-ring-inner';
+
+          if (u.fotoPerfil) {
+            const img = document.createElement('img');
+            img.className = 'avatar';
+            img.src = u.fotoPerfil;
+            img.style.width = '52px';
+            img.style.height = '52px';
+            innerDiv.appendChild(img);
+          } else {
+            const ph = document.createElement('div');
+            ph.className = 'avatar-placeholder';
+            ph.style.cssText = 'width:52px;height:52px;font-size:22px;border:none';
+            ph.textContent = u.emoji || '👤';
+            innerDiv.appendChild(ph);
+          }
+
+          ringDiv.appendChild(innerDiv);
+          thumb.appendChild(ringDiv);
+
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = u.username || 'usuário';
+          thumb.appendChild(nameSpan);
+
+          thumb.onclick = () => openStoryViewer(storiesByUser[uid], u);
+          row.appendChild(thumb);
+        } catch (e) {
+          console.error('Erro ao renderizar story de uid', uid, e);
+        }
+      }
+    },
+    (error) => {
+      console.error('Erro ao carregar stories:', error.code, error.message);
+      // Permissão negada = regras do Firebase não deployadas
+      if (error.code === 'PERMISSION_DENIED') {
+        toast('⚠️ Stories bloqueados — atualize as regras no Firebase Console', 'error');
+      }
     }
-  });
+  );
 }
 
 let storyTimeout;

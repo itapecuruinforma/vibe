@@ -1,0 +1,28 @@
+name: 🤖 Bot — Enigmas
+
+on:
+  schedule:
+    # Todo dia às 13:00 UTC = 10:00 horário de Brasília (30 min após dicas)
+    - cron: '0 13 * * *'
+  # Permite rodar manualmente pelo GitHub (útil para testar)
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rodar bot de enigmas
+        run: node bot/enigmas.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
+          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}

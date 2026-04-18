@@ -571,10 +571,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'enigmasdia';
-  const NOME     = 'Enigmas Dia';
-  const BIO      = 'Desafie seu cérebro com enigmas diários 🧩';
-  const EMOJI    = '🧩';
+  const USERNAME = 'elizabethmendes';
+  const NOME     = 'Elizabeth Mendes';
+  const BIO      = 'Um enigma por dia pra exercitar a cabeça 🧩 Tenta aí!';
+  const EMOJI    = '👩‍🦰';
 
   // Atualiza o perfil (força atualização mesmo que já exista)
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {

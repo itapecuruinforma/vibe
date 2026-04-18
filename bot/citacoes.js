@@ -428,10 +428,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'citacoesdia';
-  const NOME     = 'Citações Dia';
-  const BIO      = 'Frases que transformam perspectivas ✨';
-  const EMOJI    = '✨';
+  const USERNAME = 'josebocajose';
+  const NOME     = 'José da Boca';
+  const BIO      = 'Coleciono frases que transformam ✨ Compartilho uma por dia';
+  const EMOJI    = '👨';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
     method: 'PATCH',

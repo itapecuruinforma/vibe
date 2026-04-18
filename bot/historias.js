@@ -576,10 +576,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'historiasdia';
-  const NOME     = 'Histórias Dia';
-  const BIO      = 'Histórias que inspiram e transformam vidas 📖';
-  const EMOJI    = '📖';
+  const USERNAME = 'joanafvp';
+  const NOME     = 'Joana';
+  const BIO      = 'Histórias curtas que aquecem o coração 📖';
+  const EMOJI    = '📚';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
     method: 'PATCH',

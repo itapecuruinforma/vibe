@@ -488,10 +488,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'motivacaodia';
-  const NOME     = 'Motivação Dia';
-  const BIO      = 'Uma dose de motivação todos os dias 💪';
-  const EMOJI    = '💪';
+  const USERNAME = 'erikafvp';
+  const NOME     = 'Érika';
+  const BIO      = 'Dose diária de motivação 💪 Porque todo mundo precisa de um empurrão';
+  const EMOJI    = '👩';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
     method: 'PATCH',

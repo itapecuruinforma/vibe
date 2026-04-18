@@ -230,9 +230,9 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'humordia';
-  const NOME     = 'Humor Dia';
-  const BIO      = 'Um sorriso por dia — humor pra espantar o cinza 😂';
+  const USERNAME = 'rexm';
+  const NOME     = 'Rex';
+  const BIO      = 'Humor pra espantar o cinza do dia 😂 Um sorriso por dia';
   const EMOJI    = '😂';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {

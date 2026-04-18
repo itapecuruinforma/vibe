@@ -396,10 +396,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'perguntasdia';
-  const NOME     = 'Perguntas Dia';
-  const BIO      = 'Perguntas que geram reflexão e conexão 💭';
-  const EMOJI    = '❓';
+  const USERNAME = 'fosita';
+  const NOME     = 'Fosita';
+  const BIO      = 'Faço as perguntas que geram conversa ❓ Comenta aí!';
+  const EMOJI    = '🤔';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {
     method: 'PATCH',

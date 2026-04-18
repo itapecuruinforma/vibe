@@ -236,10 +236,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'dicasdia';
-  const NOME     = 'Dicas Dia';
-  const BIO      = 'Dicas práticas para melhorar sua vida 🌱';
-  const EMOJI    = '💡';
+  const USERNAME = 'antoniocodo';
+  const NOME     = 'Antônio Codó';
+  const BIO      = 'Dicas práticas do dia a dia 🌱 Coisa simples que faz diferença';
+  const EMOJI    = '🧔';
 
   // Atualiza o perfil (força atualização mesmo que já exista)
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {

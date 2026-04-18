@@ -232,10 +232,10 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'lucasvieira';
-  const NOME     = 'Lucas Vieira';
-  const BIO      = 'Curioso por natureza 🌍 Aprendendo todo dia';
-  const EMOJI    = '🙂';
+  const USERNAME = 'donagracas';
+  const NOME     = 'Dona Graças';
+  const BIO      = 'Curiosa desde criança 💡 Descobri uma nova hoje — vem ver!';
+  const EMOJI    = '👵';
 
   // Atualiza o perfil (força atualização mesmo que já exista)
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {

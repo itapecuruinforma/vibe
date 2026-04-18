@@ -328,9 +328,9 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'gratidaodia';
-  const NOME     = 'Gratidão Dia';
-  const BIO      = 'Gratidão transforma o pouco em suficiente 🙏';
+  const USERNAME = 'lenefvo';
+  const NOME     = 'Lene';
+  const BIO      = 'Gratidão muda tudo 🙏 Te lembro disso todo dia';
   const EMOJI    = '🙏';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {

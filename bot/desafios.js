@@ -498,9 +498,9 @@ async function signIn() {
 }
 
 async function ensureProfile(uid, token) {
-  const USERNAME = 'desafiodia';
-  const NOME     = 'Desafio Dia';
-  const BIO      = 'Desafios criativos diários para inspirar 🎨';
+  const USERNAME = 'gimjoseano';
+  const NOME     = 'Gim Joseano';
+  const BIO      = 'Lanço um desafio criativo todo dia 🎨 Topa entrar?';
   const EMOJI    = '🎨';
 
   const r1 = await fetch(`${DB_URL}/usuarios/${uid}.json?auth=${token}`, {

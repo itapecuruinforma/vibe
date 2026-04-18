@@ -8,24 +8,22 @@ Agora: **cada bot tem seu próprio login Firebase** → UID diferente → perfil
 
 ---
 
-## 📋 Passo 1 — Criar 10 emails (use o truque do Gmail)
+## 📋 Passo 1 — Emails + persona de cada bot
 
-O Gmail ignora o que vem depois do `+`. Então `mailsonnncc9+curiosidades@gmail.com` cai na **mesma caixa** que `mailsonnncc9@gmail.com`, mas o Firebase trata como email diferente.
+Cada bot tem uma **persona própria** (nome + username + bio) pra parecer uma pessoa real no feed:
 
-**Crie estes 10 emails (na verdade, são aliases do seu email):**
-
-| # | Bot | Email |
-|---|---|---|
-| 1 | Curiosidades 💡 | `mailsonnncc9+curiosidades@gmail.com` |
-| 2 | Dicas 🌱 | `mailsonnncc9+dicas@gmail.com` |
-| 3 | Enigmas 🧩 | `mailsonnncc9+enigmas@gmail.com` |
-| 4 | Motivação 💪 | `mailsonnncc9+motivacao@gmail.com` |
-| 5 | Perguntas ❓ | `mailsonnncc9+perguntas@gmail.com` |
-| 6 | Histórias 📖 | `mailsonnncc9+historias@gmail.com` |
-| 7 | Citações ✨ | `mailsonnncc9+citacoes@gmail.com` |
-| 8 | Desafios 🎨 | `mailsonnncc9+desafios@gmail.com` |
-| 9 | Gratidão 🙏 | `mailsonnncc9+gratidao@gmail.com` |
-| 10 | Humor 😂 | `mailsonnncc9+humor@gmail.com` |
+| # | Bot | Email | Persona no feed |
+|---|---|---|---|
+| 1 | Curiosidades 💡 | `donagracas666@gmail.com` | **Dona Graças** (@donagracas) |
+| 2 | Dicas 🌱 | `codoantonio24@gmail.com` | **Antônio Codó** (@antoniocodo) |
+| 3 | Enigmas 🧩 | `elizabethmendesfvp@gmail.com` | **Elizabeth Mendes** (@elizabethmendes) |
+| 4 | Motivação 💪 | `erikafvp3@gmail.com` | **Érika** (@erikafvp) |
+| 5 | Perguntas ❓ | `fositafvo@gmail.com` | **Fosita** (@fosita) |
+| 6 | Histórias 📖 | `joanafvp33@gmail.com` | **Joana** (@joanafvp) |
+| 7 | Citações ✨ | `bocajose92@gmail.com` | **José da Boca** (@josebocajose) |
+| 8 | Desafios 🎨 | `gimjoseano@gmail.com` | **Gim Joseano** (@gimjoseano) |
+| 9 | Gratidão 🙏 | `lenefvo@gmail.com` | **Lene** (@lenefvo) |
+| 10 | Humor 😂 | `rexm2110@gmail.com` | **Rex** (@rexm) |
 
 ---
 
@@ -55,25 +53,25 @@ Vá em: **seu-repo → Settings → Secrets and variables → Actions → New re
 
 | Nome do Secret | Valor |
 |---|---|
-| `BOT_CURIOSIDADES_EMAIL` | `mailsonnncc9+curiosidades@gmail.com` |
-| `BOT_CURIOSIDADES_PASSWORD` | (a senha que você criou) |
-| `BOT_DICAS_EMAIL` | `mailsonnncc9+dicas@gmail.com` |
+| `BOT_CURIOSIDADES_EMAIL` | `donagracas666@gmail.com` |
+| `BOT_CURIOSIDADES_PASSWORD` | (a senha da conta Vibe dela) |
+| `BOT_DICAS_EMAIL` | `codoantonio24@gmail.com` |
 | `BOT_DICAS_PASSWORD` | (senha) |
-| `BOT_ENIGMAS_EMAIL` | `mailsonnncc9+enigmas@gmail.com` |
+| `BOT_ENIGMAS_EMAIL` | `elizabethmendesfvp@gmail.com` |
 | `BOT_ENIGMAS_PASSWORD` | (senha) |
-| `BOT_MOTIVACAO_EMAIL` | `mailsonnncc9+motivacao@gmail.com` |
+| `BOT_MOTIVACAO_EMAIL` | `erikafvp3@gmail.com` |
 | `BOT_MOTIVACAO_PASSWORD` | (senha) |
-| `BOT_PERGUNTAS_EMAIL` | `mailsonnncc9+perguntas@gmail.com` |
+| `BOT_PERGUNTAS_EMAIL` | `fositafvo@gmail.com` |
 | `BOT_PERGUNTAS_PASSWORD` | (senha) |
-| `BOT_HISTORIAS_EMAIL` | `mailsonnncc9+historias@gmail.com` |
+| `BOT_HISTORIAS_EMAIL` | `joanafvp33@gmail.com` |
 | `BOT_HISTORIAS_PASSWORD` | (senha) |
-| `BOT_CITACOES_EMAIL` | `mailsonnncc9+citacoes@gmail.com` |
+| `BOT_CITACOES_EMAIL` | `bocajose92@gmail.com` |
 | `BOT_CITACOES_PASSWORD` | (senha) |
-| `BOT_DESAFIOS_EMAIL` | `mailsonnncc9+desafios@gmail.com` |
+| `BOT_DESAFIOS_EMAIL` | `gimjoseano@gmail.com` |
 | `BOT_DESAFIOS_PASSWORD` | (senha) |
-| `BOT_GRATIDAO_EMAIL` | `mailsonnncc9+gratidao@gmail.com` |
+| `BOT_GRATIDAO_EMAIL` | `lenefvo@gmail.com` |
 | `BOT_GRATIDAO_PASSWORD` | (senha) |
-| `BOT_HUMOR_EMAIL` | `mailsonnncc9+humor@gmail.com` |
+| `BOT_HUMOR_EMAIL` | `rexm2110@gmail.com` |
 | `BOT_HUMOR_PASSWORD` | (senha) |
 
 ### Os antigos `BOT_EMAIL` e `BOT_PASSWORD` podem ser deletados

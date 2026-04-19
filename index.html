@@ -5,6 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Vibe — Conecte-se</title>
   <link rel="stylesheet" href="css/global.css"/>
+  <style>
+    .btn-google {
+      width: 100%;
+      padding: 13px;
+      background: #fff;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .btn-google:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .btn-google svg { width: 18px; height: 18px; }
+    .auth-or {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text2);
+      font-size: 12px;
+      margin: 4px 0;
+    }
+    .auth-or::before, .auth-or::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Modal de setup para usuários Google */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+    }
+    .modal-box {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-box h2 { font-size: 18px; font-weight: 700; margin: 0; }
+    .modal-box p  { font-size: 13px; color: var(--text2); margin: 0; }
+  </style>
 </head>
 <body>
 
@@ -27,53 +86,34 @@
 
   <!-- PREVIEW SECTION -->
   <div class="landing-preview">
-
-    <!-- Contador de usuários -->
     <div class="landing-counter">
       <span class="counter-fire">🔥</span>
       <span id="userCount" class="counter-num">–</span>
       <span class="counter-label">pessoas já vibrando</span>
     </div>
-
-    <!-- Mini-posts rolando -->
     <div class="preview-scroll" id="previewScroll">
       <div class="preview-card">
-        <div class="preview-card-top">
-          <span>🙂</span><span>lucasvieira</span>
-        </div>
+        <div class="preview-card-top"><span>🙂</span><span>lucasvieira</span></div>
         <p>Sabia que Oxford é mais antiga que os impérios asteca e inca? 🤯 #curiosidade</p>
       </div>
       <div class="preview-card">
-        <div class="preview-card-top">
-          <span>🌸</span><span>ana_luz</span>
-        </div>
+        <div class="preview-card-top"><span>🌸</span><span>ana_luz</span></div>
         <p>Esse fim de semana tá incrível ☀️ Aproveitando cada momento com quem importa 💜</p>
       </div>
       <div class="preview-card">
-        <div class="preview-card-top">
-          <span>🎵</span><span>rafael_m</span>
-        </div>
+        <div class="preview-card-top"><span>🎵</span><span>rafael_m</span></div>
         <p>Nova playlist no modo repeat 🎧 Quem mais é viciado assim? rsrs</p>
       </div>
       <div class="preview-card">
-        <div class="preview-card-top">
-          <span>🌿</span><span>julia_s</span>
-        </div>
+        <div class="preview-card-top"><span>🌿</span><span>julia_s</span></div>
         <p>A Amazônia respira e nós respiramos junto 🌳 Que bioma incrível que temos!</p>
       </div>
       <div class="preview-card">
-        <div class="preview-card-top">
-          <span>⚡</span><span>marcos_t</span>
-        </div>
+        <div class="preview-card-top"><span>⚡</span><span>marcos_t</span></div>
         <p>Segunda-feira chegando cheio de energia! 💪 Bora vencer mais uma semana</p>
       </div>
     </div>
-
-    <!-- Regiões -->
-    <div class="landing-regions">
-      📍 São Luís · Teresina · Fortaleza · Belém · São Paulo
-    </div>
-
+    <div class="landing-regions">📍 São Luís · Teresina · Fortaleza · Belém · São Paulo</div>
   </div>
 
   <!-- LOGIN -->
@@ -81,6 +121,16 @@
     <input class="input" id="emailLogin" type="email" placeholder="Email"/>
     <input class="input" id="senhaLogin" type="password" placeholder="Senha"/>
     <button class="btn btn-primary" id="btnLogin" style="width:100%;padding:14px">Entrar</button>
+    <div class="auth-or">ou</div>
+    <button class="btn-google" id="btnGoogleLogin">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Entrar com Google
+    </button>
     <div class="auth-switch">Não tem conta? <span id="toRegister">Cadastre-se</span></div>
   </div>
 
@@ -91,9 +141,30 @@
     <input class="input" id="emailReg" type="email" placeholder="Email"/>
     <input class="input" id="senhaReg" type="password" placeholder="Senha (min. 6 caracteres)"/>
     <button class="btn btn-primary" id="btnRegister" style="width:100%;padding:14px">Criar conta</button>
+    <div class="auth-or">ou</div>
+    <button class="btn-google" id="btnGoogleRegister">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Cadastrar com Google
+    </button>
     <div class="auth-switch">Já tem conta? <span id="toLogin">Entrar</span></div>
   </div>
 
+</div>
+
+<!-- MODAL: Escolher username após login com Google -->
+<div id="googleSetupModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>Quase lá! 🎉</h2>
+    <p>Escolha seu nome de usuário na Vibe</p>
+    <input class="input" id="usernameGoogle" type="text" placeholder="Nome de usuário (único)" maxlength="30"/>
+    <input class="input" id="emojiGoogle" type="text" placeholder="Emoji favorito (ex: 🔥)" maxlength="4"/>
+    <button class="btn btn-primary" id="btnSalvarGoogle" style="width:100%;padding:14px">Entrar na Vibe 🚀</button>
+  </div>
 </div>
 
 <div id="toast-container"></div>
@@ -101,35 +172,59 @@
 <script type="module">
 import { auth, db } from "./js/config.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, signOut, onAuthStateChanged
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendEmailVerification, signOut, onAuthStateChanged,
+  GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import {
-  getDatabase, ref, set, get
+  ref, set, get
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 import {
   validateUsername, validateEmail, validatePassword, validateEmoji
 } from "./js/validation.js";
+
+// ── Impede que onAuthStateChanged redirecione durante setup Google ──
+let handlingGoogleSetup = false;
+let googleUser = null; // guarda o usuário Google durante setup
 
 function toast(msg, type = '') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
   el.textContent = msg;
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  setTimeout(() => el.remove(), 3500);
 }
 
-onAuthStateChanged(auth, user => {
+// ── Auth state ──
+onAuthStateChanged(auth, async user => {
+  if (handlingGoogleSetup) return; // aguardando setup do Google
+
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = '';
-  if (user && user.emailVerified) {
+
+  if (!user) return;
+
+  // Usuário Google: sempre emailVerified = true
+  // Usuário email: exige verificação
+  if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
+    await signOut(auth);
+    return;
+  }
+
+  // Verifica se já tem perfil no banco
+  const snap = await get(ref(db, 'usuarios/' + user.uid + '/username'));
+  if (snap.exists()) {
     window.location.href = 'feed.html';
-  } else if (user && !user.emailVerified) {
-    signOut(auth);
+  } else if (user.providerData[0]?.providerId === 'google.com') {
+    // Usuário Google sem perfil → mostrar setup
+    googleUser = user;
+    handlingGoogleSetup = true;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('googleSetupModal').classList.remove('hidden');
   }
 });
 
-// ── Contador de usuários (usernames é público) ──
+// ── Contador ──
 get(ref(db, 'usernames')).then(snap => {
   const total = snap.exists() ? Object.keys(snap.val()).length : 1;
   animateCounter(total);
@@ -148,11 +243,10 @@ function animateCounter(target) {
   }, 50);
 }
 
-// ── Auto-scroll suave nos mini-posts ──
+// ── Auto-scroll ──
 const scroll = document.getElementById('previewScroll');
-let pos = 0;
-let autoScrolling = true;
-const scrollLoop = setInterval(() => {
+let pos = 0, autoScrolling = true;
+setInterval(() => {
   if (!autoScrolling) return;
   pos += 0.6;
   if (pos >= scroll.scrollWidth - scroll.clientWidth) pos = 0;
@@ -161,34 +255,27 @@ const scrollLoop = setInterval(() => {
 scroll.addEventListener('touchstart', () => { autoScrolling = false; });
 scroll.addEventListener('touchend', () => { setTimeout(() => { autoScrolling = true; }, 3000); });
 
-// ── Navegação entre formulários ──
+// ── Navegação ──
 document.getElementById('toRegister').onclick = () => {
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('registerForm').classList.remove('hidden');
 };
-
 document.getElementById('toLogin').onclick = () => {
   document.getElementById('registerForm').classList.add('hidden');
   document.getElementById('loginForm').classList.remove('hidden');
 };
 
-// ── Login ──
+// ── Login email ──
 document.getElementById('btnLogin').onclick = async () => {
   const email = document.getElementById('emailLogin').value.trim();
   const senha = document.getElementById('senhaLogin').value;
-
   if (!email || !senha) return toast('Preencha todos os campos', 'error');
-
   const emailError = validateEmail(email);
   if (emailError) return toast(emailError, 'error');
-
-  const senhaError = validatePassword(senha);
-  if (senhaError) return toast(senhaError, 'error');
-
   try {
     const cred = await signInWithEmailAndPassword(auth, email, senha);
     if (!cred.user.emailVerified) {
-      toast('Verifique seu email antes de entrar', 'error');
+      toast('Verifique seu email antes de entrar ✉️', 'error');
       await signOut(auth);
       return;
     }
@@ -198,7 +285,86 @@ document.getElementById('btnLogin').onclick = async () => {
   }
 };
 
-// ── Cadastro ──
+// ── Google Sign-In (login e cadastro compartilham a mesma lógica) ──
+async function entrarComGoogle() {
+  try {
+    const provider = new GoogleAuthProvider();
+    handlingGoogleSetup = true;
+    const cred = await signInWithPopup(auth, provider);
+    const user = cred.user;
+
+    // Verifica se já tem perfil
+    const snap = await get(ref(db, 'usuarios/' + user.uid + '/username'));
+    if (snap.exists()) {
+      // Usuário retornando → vai direto pro feed
+      handlingGoogleSetup = false;
+      window.location.href = 'feed.html';
+    } else {
+      // Usuário novo → mostra setup de username
+      googleUser = user;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('googleSetupModal').classList.remove('hidden');
+    }
+  } catch (e) {
+    handlingGoogleSetup = false;
+    if (e.code !== 'auth/popup-closed-by-user') {
+      toast('Erro ao entrar com Google. Tente novamente.', 'error');
+    }
+  }
+}
+
+document.getElementById('btnGoogleLogin').onclick    = entrarComGoogle;
+document.getElementById('btnGoogleRegister').onclick = entrarComGoogle;
+
+// ── Setup de username após Google ──
+document.getElementById('btnSalvarGoogle').onclick = async () => {
+  const username = document.getElementById('usernameGoogle').value.trim().toLowerCase();
+  const emoji    = document.getElementById('emojiGoogle').value.trim() || '😊';
+  const btn      = document.getElementById('btnSalvarGoogle');
+
+  const usernameError = validateUsername(username);
+  if (usernameError) return toast(usernameError, 'error');
+
+  const emojiError = validateEmoji(emoji);
+  if (emojiError) return toast(emojiError, 'error');
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    const snap = await get(ref(db, 'usernames/' + username));
+    if (snap.exists()) {
+      toast('Username já em uso, escolha outro', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Entrar na Vibe 🚀';
+      return;
+    }
+
+    const uid = googleUser.uid;
+    const nome = googleUser.displayName || username;
+
+    await set(ref(db, 'usuarios/' + uid), {
+      username,
+      emoji,
+      nome,
+      bio: '',
+      fotoPerfil: googleUser.photoURL || '',
+      criadoEm: Date.now(),
+    });
+    await set(ref(db, 'usernames/' + username), uid);
+
+    handlingGoogleSetup = false;
+    window.location.href = 'feed.html';
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao salvar perfil. Tente novamente.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Entrar na Vibe 🚀';
+  }
+};
+
+// ── Cadastro email ──
 document.getElementById('btnRegister').onclick = async () => {
   const username = document.getElementById('usernameReg').value.trim().toLowerCase();
   const emoji    = document.getElementById('emojiReg').value.trim() || '😊';
@@ -207,13 +373,10 @@ document.getElementById('btnRegister').onclick = async () => {
 
   const usernameError = validateUsername(username);
   if (usernameError) return toast(usernameError, 'error');
-
   const emojiError = validateEmoji(emoji);
   if (emojiError) return toast(emojiError, 'error');
-
   const emailError = validateEmail(email);
   if (emailError) return toast(emailError, 'error');
-
   const senhaError = validatePassword(senha);
   if (senhaError) return toast(senhaError, 'error');
 
@@ -225,7 +388,6 @@ document.getElementById('btnRegister').onclick = async () => {
     cred = await createUserWithEmailAndPassword(auth, email, senha);
     const uid = cred.user.uid;
 
-    // Se o banco falhar, a conta Auth é deletada para não ficar fantasma
     try {
       await set(ref(db, 'usuarios/' + uid), {
         username, emoji, bio: '', fotoPerfil: '', criadoEm: Date.now()
@@ -238,13 +400,12 @@ document.getElementById('btnRegister').onclick = async () => {
 
     await sendEmailVerification(cred.user);
     await signOut(auth);
-
     toast('Conta criada! Verifique seu email ✉️', 'success');
     document.getElementById('registerForm').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
   } catch (e) {
     if (e.code === 'auth/email-already-in-use') {
-      toast('Este email já está cadastrado. Tente entrar.', 'error');
+      toast('Email já cadastrado. Tente entrar.', 'error');
     } else {
       toast(e.message, 'error');
     }

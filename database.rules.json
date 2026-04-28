@@ -1,6 +1,188 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true
+    ".read": false,
+    ".write": false,
+
+    "usuarios": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+
+        "seguidores": {
+          "$followerUid": {
+            ".write": "auth != null && auth.uid === $followerUid",
+            ".validate": "newData.isBoolean() || !newData.exists()"
+          }
+        },
+        "seguindo": {
+          "$followedUid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.isBoolean() || !newData.exists()"
+          }
+        },
+        "ultimaConexao": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isNumber()"
+        },
+
+        "username":   { ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 30 && newData.val().matches(/^[a-z0-9_]+$/)" },
+        "nome":       { ".validate": "newData.isString() && newData.val().length <= 60" },
+        "bio":        { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 150)" },
+        "foto":       { ".validate": "!newData.exists() || newData.isString()" },
+        "fotoPerfil": { ".validate": "!newData.exists() || newData.isString()" },
+        "emoji":      { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 8)" },
+        "email":      { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "cpfBeta":    { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 14)" },
+        "redes": {
+          "instagram": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 60)" },
+          "x":         { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 60)" },
+          "tiktok":    { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 60)" },
+          "youtube":   { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)" }
+        }
+      }
+    },
+
+    "usernames": {
+      ".read": true,
+      "$username": {
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid && $username.toLowerCase() === $username && $username.length >= 3 && $username.length <= 30"
+      }
+    },
+
+    "posts": {
+      ".read": "auth != null",
+      ".indexOn": ["timestamp", "uid"],
+
+      "$postId": {
+        ".write": "auth != null && (!data.exists() ? newData.child('uid').val() === auth.uid : data.child('uid').val() === auth.uid)",
+
+        "uid":       { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "tipo":      { ".validate": "newData.isString() && (newData.val() === 'foto' || newData.val() === 'video' || newData.val() === 'texto' || newData.val() === 'link')" },
+        "legenda":      { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 500)" },
+        "texto":        { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 1000)" },
+        "imagemUrl":    { ".validate": "!newData.exists() || newData.isString()" },
+        "videoUrl":     { ".validate": "!newData.exists() || newData.isString()" },
+        "imagemPequena":{ ".validate": "!newData.exists() || newData.isString()" },
+        "url":          { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 500)" },
+        "plataforma":   { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 30)" },
+
+        "curtidas": {
+          ".write": "auth != null",
+          "$userId": {
+            ".write": "auth != null && auth.uid === $userId",
+            ".validate": "newData.isBoolean() || !newData.exists()"
+          }
+        },
+
+        "comentarios": {
+          "$commentId": {
+            ".write": "auth != null && (!data.exists() ? newData.child('uid').val() === auth.uid : (data.child('uid').val() === auth.uid || root.child('posts/' + $postId + '/uid').val() === auth.uid))",
+            "uid":       { ".validate": "newData.isString() && newData.val() === auth.uid" },
+            "texto":     { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 500" },
+            "timestamp": { ".validate": "newData.isNumber()" }
+          }
+        }
+      }
+    },
+
+    "stories": {
+      ".read": "auth != null",
+      ".indexOn": ["timestamp", "uid"],
+
+      "$storyId": {
+        ".write": "auth != null && (!data.exists() ? newData.child('uid').val() === auth.uid : data.child('uid').val() === auth.uid)",
+
+        "uid":       { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "imagemUrl": { ".validate": "!newData.exists() || newData.isString()" },
+        "videoUrl":  { ".validate": "!newData.exists() || newData.isString()" },
+        "expiresAt": { ".validate": "!newData.exists() || newData.isNumber()" },
+
+        "visto": {
+          "$userId": {
+            ".write": "auth != null && auth.uid === $userId",
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      }
+    },
+
+    "conversas": {
+      ".read": "auth != null",
+
+      "$conversaId": {
+        ".read":  "auth != null && data.child('participantes/' + auth.uid).exists()",
+        ".write": "auth != null && (!data.exists() || data.child('participantes/' + auth.uid).exists())",
+
+        "participantes": {
+          "$userId": {
+            ".validate": "newData.isBoolean()"
+          }
+        },
+
+        "mensagens": {
+          "$msgId": {
+            ".write": "auth != null && root.child('conversas/' + $conversaId + '/participantes/' + auth.uid).exists() && (!data.exists() ? newData.child('uid').val() === auth.uid : data.child('uid').val() === auth.uid)",
+
+            "uid":       { ".validate": "newData.isString() && newData.val() === auth.uid" },
+            "timestamp": { ".validate": "newData.isNumber()" },
+            "texto":     { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 1000)" },
+            "imagemUrl": { ".validate": "!newData.exists() || newData.isString()" },
+            "audioUrl":  { ".validate": "!newData.exists() || newData.isString()" },
+
+            "lido": {
+              "$userId": {
+                ".write": "auth != null && auth.uid === $userId && root.child('conversas/' + $conversaId + '/participantes/' + auth.uid).exists()",
+                ".validate": "newData.isNumber()"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "notificacoes": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid === $uid",
+        ".write": "auth != null",
+
+        "$notifId": {
+          "tipo":      { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "de":        { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "timestamp": { ".validate": "newData.isNumber()" },
+          "lida":      { ".validate": "newData.isBoolean()" },
+          "postId":    { ".validate": "!newData.exists() || newData.isString()" },
+          "texto":     { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200)" }
+        }
+      }
+    },
+
+    "denuncias": {
+      "$denunciaId": {
+        ".read":  false,
+        ".write": "auth != null && !data.exists() && newData.child('de').val() === auth.uid",
+        "de":        { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "tipo":      { ".validate": "newData.isString() && (newData.val() === 'post' || newData.val() === 'comentario' || newData.val() === 'usuario' || newData.val() === 'mensagem')" },
+        "alvoId":    { ".validate": "newData.isString()" },
+        "motivo":    { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "timestamp": { ".validate": "newData.isNumber()" }
+      }
+    },
+
+    "bloqueios": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$bloqueadoUid": {
+          ".validate": "newData.isBoolean() || !newData.exists()"
+        }
+      }
+    },
+
+    "chat_solicitacoes": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
   }
 }

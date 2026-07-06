@@ -1,23 +1,30 @@
 -- ============================================
 -- SUPABASE RLS (Row Level Security) — Vibe
 -- ============================================
--- Rodar no SQL Editor do Supabase:
--- https://supabase.com/dashboard/project/tdsisbsmdvzjotzuwqsn/sql
+-- Rodar no SQL Editor do projeto Supabase da Vibe (conta própria, separada do ACNET):
+-- Dashboard -> SQL Editor -> cole tudo e clique em Run.
+-- Pré-requisito: criar antes um bucket chamado "vibe" em Storage.
 -- ============================================
 
 
 -- ===============================================
 -- 1. BUCKET "vibe" — policies de storage
 -- ===============================================
+-- IMPORTANTE sobre o modelo de auth da Vibe:
+--   Os usuários da Vibe autenticam no FIREBASE, não no Supabase. O upload
+--   (js/storage.js) usa apenas a chave anônima (anon/publishable). Portanto a
+--   policy de INSERT precisa permitir o papel anônimo — NÃO exigir 'authenticated'
+--   (senão todo upload volta 403). A proteção real fica no bucket:
+--   file_size_limit + allowed_mime_types (seção 2).
+--
 -- Regras:
 --   - Qualquer um pode LER (get) arquivos (posts/fotos são públicas)
---   - Só usuários autenticados podem FAZER UPLOAD (insert)
---   - Só o DONO do arquivo pode DELETAR (update/delete)
---   - O "owner" é inferido pelo path: uid/{auth.uid}/...
+--   - Qualquer um pode FAZER UPLOAD (insert) no bucket vibe (limitado por tipo/tamanho)
 
 -- Remove policies antigas se existirem (idempotente)
 DROP POLICY IF EXISTS "vibe_public_read"    ON storage.objects;
 DROP POLICY IF EXISTS "vibe_auth_insert"    ON storage.objects;
+DROP POLICY IF EXISTS "vibe_public_insert"  ON storage.objects;
 DROP POLICY IF EXISTS "vibe_owner_update"   ON storage.objects;
 DROP POLICY IF EXISTS "vibe_owner_delete"   ON storage.objects;
 
@@ -28,27 +35,11 @@ CREATE POLICY "vibe_public_read"
   USING (bucket_id = 'vibe');
 
 
--- Upload: só autenticado, e tamanho máx 20MB
-CREATE POLICY "vibe_auth_insert"
+-- Upload: liberado no bucket vibe (auth real é feita no Firebase).
+-- A restrição de tipo/tamanho vem da config do bucket (seção 2).
+CREATE POLICY "vibe_public_insert"
   ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'vibe'
-    AND auth.role() = 'authenticated'
-    AND (metadata->>'size')::bigint < 20971520   -- 20 MB
-  );
-
-
--- Update: só o owner do arquivo (owner_id é text no Supabase novo, precisa cast)
-CREATE POLICY "vibe_owner_update"
-  ON storage.objects FOR UPDATE
-  USING (bucket_id = 'vibe' AND auth.uid()::text = owner_id)
-  WITH CHECK (bucket_id = 'vibe' AND auth.uid()::text = owner_id);
-
-
--- Delete: só o owner
-CREATE POLICY "vibe_owner_delete"
-  ON storage.objects FOR DELETE
-  USING (bucket_id = 'vibe' AND auth.uid()::text = owner_id);
+  WITH CHECK (bucket_id = 'vibe');
 
 
 

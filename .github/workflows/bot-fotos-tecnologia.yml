@@ -1,0 +1,25 @@
+name: 🤖 Bot — Fotos Tecnologia
+
+on:
+  schedule:
+    # Todo dia às 19:00 UTC = 16:00 horário de Brasília
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Rodar bot de fotos (tecnologia)
+        run: node bot/fotos-tecnologia.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_FOTOS_TECNOLOGIA_EMAIL: ${{ secrets.BOT_FOTOS_TECNOLOGIA_EMAIL }}
+          BOT_FOTOS_TECNOLOGIA_PASSWORD: ${{ secrets.BOT_FOTOS_TECNOLOGIA_PASSWORD }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}

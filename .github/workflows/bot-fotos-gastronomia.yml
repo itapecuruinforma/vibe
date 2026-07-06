@@ -1,0 +1,25 @@
+name: 🤖 Bot — Fotos Gastronomia
+
+on:
+  schedule:
+    # Todo dia às 23:00 UTC = 20:00 horário de Brasília
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Rodar bot de fotos (gastronomia)
+        run: node bot/fotos-gastronomia.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_FOTOS_GASTRONOMIA_EMAIL: ${{ secrets.BOT_FOTOS_GASTRONOMIA_EMAIL }}
+          BOT_FOTOS_GASTRONOMIA_PASSWORD: ${{ secrets.BOT_FOTOS_GASTRONOMIA_PASSWORD }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}

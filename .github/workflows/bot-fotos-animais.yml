@@ -1,0 +1,25 @@
+name: 🤖 Bot — Fotos Animais
+
+on:
+  schedule:
+    # Todo dia às 22:00 UTC = 19:00 horário de Brasília
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Rodar bot de fotos (animais)
+        run: node bot/fotos-animais.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          BOT_FOTOS_ANIMAIS_EMAIL: ${{ secrets.BOT_FOTOS_ANIMAIS_EMAIL }}
+          BOT_FOTOS_ANIMAIS_PASSWORD: ${{ secrets.BOT_FOTOS_ANIMAIS_PASSWORD }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}

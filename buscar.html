@@ -54,7 +54,10 @@ let currentUser = null;
 let allUsers = {};
 
 onAuthStateChanged(auth, async user => {
-  if (!user || !user.emailVerified) return window.location.href = 'index.html';
+  if (!user) return window.location.href = 'index.html';
+  // Google Sign-In é considerado verificado; email/senha exige verificação
+  const isGoogle = user.providerData.some(p => p.providerId === 'google.com');
+  if (!user.emailVerified && !isGoogle) return window.location.href = 'index.html';
   currentUser = user;
   document.getElementById('app').style.display = '';
   const snap = await get(ref(db, 'usuarios'));

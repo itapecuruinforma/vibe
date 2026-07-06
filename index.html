@@ -390,7 +390,7 @@ document.getElementById('btnRegister').onclick = async () => {
 
     try {
       await set(ref(db, 'usuarios/' + uid), {
-        username, emoji, bio: '', fotoPerfil: '', criadoEm: Date.now()
+        username, emoji, nome: username, bio: '', fotoPerfil: '', criadoEm: Date.now()
       });
       await set(ref(db, 'usernames/' + username), uid);
     } catch (dbErr) {

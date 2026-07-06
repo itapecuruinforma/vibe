@@ -76,7 +76,10 @@ function timeAgo(ts) {
 }
 
 onAuthStateChanged(auth, async user => {
-  if (!user || !user.emailVerified) return window.location.href = 'index.html';
+  if (!user) return window.location.href = 'index.html';
+  // Google Sign-In é considerado verificado; email/senha exige verificação
+  const isGoogle = user.providerData.some(p => p.providerId === 'google.com');
+  if (!user.emailVerified && !isGoogle) return window.location.href = 'index.html';
   currentUser = user;
   const snap = await get(ref(db, 'usuarios'));
   snap.forEach(c => { allUsers[c.key] = { uid: c.key, ...c.val() }; });

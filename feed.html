@@ -925,9 +925,16 @@ document.getElementById('sendComment').onclick = async () => {
 };
 
 // ── DETECÇÃO DE PLATAFORMA ──
+function normalizeUrl(url) {
+  const u = (url || '').trim();
+  if (!u) return '';
+  // Adiciona https:// automaticamente se o usuário não digitou o esquema
+  return /^https?:\/\//i.test(u) ? u : 'https://' + u;
+}
+
 function detectPlatform(url) {
   try {
-    const host = new URL(url).hostname.replace('www.', '');
+    const host = new URL(normalizeUrl(url)).hostname.replace('www.', '');
     if (host.includes('instagram.com')) return { id: 'instagram', name: 'Instagram', icon: '📸', color: '#E1306C' };
     if (host.includes('twitter.com') || host.includes('x.com')) return { id: 'x', name: 'X (Twitter)', icon: '𝕏', color: '#14171A' };
     if (host.includes('tiktok.com')) return { id: 'tiktok', name: 'TikTok', icon: '🎵', color: '#010101' };
@@ -1094,7 +1101,7 @@ async function publish(isStory = false) {
   } else if (postType === 'link') {
     const urlVal = document.getElementById('linkUrl').value.trim();
     if (!urlVal) return toast('Cole o link do seu post', 'error');
-    if (!detectPlatform(urlVal)) return toast('URL inválida. Comece com https://', 'error');
+    if (!detectPlatform(urlVal)) return toast('URL inválida, confira o link', 'error');
   } else {
     if (!selectedFile) return toast('Selecione uma mídia', 'error');
     if (caption) {
@@ -1126,7 +1133,7 @@ async function publish(isStory = false) {
 
     // POST TIPO LINK: cross-post de outra rede
     if (postType === 'link') {
-      const urlVal = document.getElementById('linkUrl').value.trim();
+      const urlVal = normalizeUrl(document.getElementById('linkUrl').value);
       const plat = detectPlatform(urlVal);
       await push(ref(db, 'posts'), {
         uid: currentUser.uid,
